@@ -36,9 +36,10 @@ npm run start
 
 ## Expo SDK note
 
-- Project is pinned to Expo SDK 52 (`expo ~52.0.46`).
-- Expo Go 54 cannot run this project directly.
-- For real device debug, install Expo Go compatible with SDK 52, or upgrade project to SDK 54 in a dedicated task.
+- Project is pinned to Expo SDK 54 (`expo ~54.0.0`).
+- Expo Go 54 is supported.
+- After pulling latest code, run dependency alignment once:
+  - `npx expo install --fix`
 
 ## API base URL
 
