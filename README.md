@@ -1,5 +1,12 @@
 # FreshMart
 
+## v0.1.1 Product Function Summary
+
+- Backend scaffold is ready for integration: unified response envelope, role-based auth middleware, SMS mock flow, auth module, upload module, migrations, Swagger, and Docker Compose startup.
+- Management web (`admin-web`) supports real login through backend auth API, token persistence, token refresh flow, and basic admin route verification.
+- Buyer app (`buyer-app`) and seller app (`seller-app`) are independent Expo projects with isomorphic structure, covering Expo Router navigation, Axios client, Zustand token store, and role-based login.
+- Expo versions are pinned to SDK 52 compatible ranges (`expo ~52.0.46`, `expo-router ~4.0.20`) for device testing with matching Expo Go.
+
 ## Quick Start (P0-1-7)
 
 One command to start API + MySQL + Redis + Nginx:
