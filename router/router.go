@@ -21,23 +21,43 @@ const (
 	roleAdmin  = 3
 )
 
-func New(log *zap.Logger, cfg config.Config, txDemoHandler *commonhandler.TxDemoHandler) *gin.Engine {
+func New(
+	log *zap.Logger,
+	cfg config.Config,
+	txDemoHandler *commonhandler.TxDemoHandler,
+	smsHandler *commonhandler.SMSHandler,
+	authHandler *commonhandler.AuthHandler,
+	uploadHandler *commonhandler.UploadHandler,
+) *gin.Engine {
 	engine := gin.New()
 	engine.Use(gin.Recovery(), middleware.RequestLogger(log), middleware.CORS())
 
 	engine.GET("/health", commonhandler.Health)
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	engine.Static("/uploads", cfg.UploadDir)
 
 	apiV1 := engine.Group("/api/v1")
 	apiV1.Use(middleware.RateLimit(cfg.RateLimitPerMinute))
 	{
-		authHandler := commonhandler.NewAuthHandler(cfg)
-
 		commonGroup := apiV1.Group("/common")
 		commonGroup.GET("/ping", func(c *gin.Context) {
 			response.Success(c, gin.H{"scope": "common"})
 		})
-		commonGroup.GET("/auth/dev-token", authHandler.DevToken)
+		if authHandler != nil {
+			commonGroup.GET("/auth/dev-token", authHandler.DevToken)
+			commonGroup.POST("/auth/register", authHandler.Register)
+			commonGroup.POST("/auth/login", authHandler.Login)
+			commonGroup.POST("/auth/login-sms", authHandler.LoginSMS)
+			commonGroup.POST("/auth/refresh", authHandler.Refresh)
+			commonGroup.POST("/auth/logout", authHandler.Logout)
+		}
+		if smsHandler != nil {
+			commonGroup.POST("/sms/send", smsHandler.SendSMSCode)
+		}
+		if uploadHandler != nil {
+			commonGroup.POST("/upload/image", uploadHandler.UploadImage)
+			commonGroup.POST("/upload/images", uploadHandler.UploadImages)
+		}
 		if txDemoHandler != nil {
 			commonGroup.POST("/tx-demo/commit", txDemoHandler.Commit)
 			commonGroup.POST("/tx-demo/rollback", txDemoHandler.Rollback)

@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "FreshMart Seller",
+    "slug": "freshmart-seller",
+    "scheme": "freshmart-seller",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

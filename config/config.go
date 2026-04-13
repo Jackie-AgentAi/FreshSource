@@ -23,6 +23,7 @@ type Config struct {
 	JWTSecret          string
 	RateLimitPerMinute int
 	DatabaseDSN        string
+	UploadDir          string
 }
 
 func Load() (Config, error) {
@@ -33,6 +34,7 @@ func Load() (Config, error) {
 		JWTSecret:          readStringEnv("JWT_SECRET", defaultJWTSecret),
 		RateLimitPerMinute: defaultRateLimitPerMinute,
 		DatabaseDSN:        readStringEnv("DB_DSN", ""),
+		UploadDir:          readStringEnv("UPLOAD_DIR", "uploads"),
 	}
 
 	port, err := readIntEnv("APP_PORT", defaultPort)

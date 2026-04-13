@@ -37,6 +37,11 @@ func main() {
 	}()
 
 	var txDemoHandler *commonhandler.TxDemoHandler
+	var authHandler *commonhandler.AuthHandler
+	smsService := service.NewSMSService(cfg.Env)
+	smsHandler := commonhandler.NewSMSHandler(smsService)
+	uploadService := service.NewUploadService(cfg.UploadDir)
+	uploadHandler := commonhandler.NewUploadHandler(uploadService)
 	if cfg.DatabaseDSN != "" {
 		dbConn, err := db.NewMySQL(cfg.DatabaseDSN)
 		if err != nil {
@@ -47,11 +52,14 @@ func main() {
 		userRepo := repository.NewUserRepository(dbConn)
 		userService := service.NewUserService(txManager, userRepo)
 		txDemoHandler = commonhandler.NewTxDemoHandler(userService)
+		authService := service.NewAuthService(userRepo, smsService, cfg.JWTSecret)
+		authHandler = commonhandler.NewAuthHandler(cfg, authService)
 	} else {
-		log.Warn("database dsn is empty, tx demo endpoints disabled")
+		log.Warn("database dsn is empty, tx demo and auth endpoints disabled")
+		authHandler = commonhandler.NewAuthHandler(cfg, nil)
 	}
 
-	engine := router.New(log, cfg, txDemoHandler)
+	engine := router.New(log, cfg, txDemoHandler, smsHandler, authHandler, uploadHandler)
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Info("server starting",
 		zap.String("app_name", cfg.AppName),

@@ -1,0 +1,29 @@
+# General
+.DS_Store
+*.log
+
+# Backend runtime
+uploads/
+
+# Web app (admin)
+admin-web/node_modules/
+admin-web/.umi/
+admin-web/.umi-production/
+admin-web/dist/
+admin-web/.cache/
+
+# Expo apps (buyer/seller)
+buyer-app/node_modules/
+buyer-app/.expo/
+buyer-app/.expo-shared/
+buyer-app/dist/
+buyer-app/web-build/
+
+seller-app/node_modules/
+seller-app/.expo/
+seller-app/.expo-shared/
+seller-app/dist/
+seller-app/web-build/
+
+# IDE / local agent artifacts
+.claude/
