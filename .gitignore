@@ -8,9 +8,11 @@ uploads/
 # Web app (admin)
 admin-web/node_modules/
 admin-web/.umi/
+admin-web/src/.umi/
 admin-web/.umi-production/
 admin-web/dist/
 admin-web/.cache/
+admin-web/admin-web/
 
 # Expo apps (buyer/seller)
 buyer-app/node_modules/
