@@ -1,15 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 
 	"freshmart/config"
+	adminhandler "freshmart/internal/handler/admin"
+	buyerhandler "freshmart/internal/handler/buyer"
 	commonhandler "freshmart/internal/handler/common"
+	sellerhandler "freshmart/internal/handler/seller"
 	"freshmart/internal/pkg/db"
 	"freshmart/internal/pkg/logger"
 	"freshmart/internal/repository"
@@ -38,6 +43,18 @@ func main() {
 
 	var txDemoHandler *commonhandler.TxDemoHandler
 	var authHandler *commonhandler.AuthHandler
+	var buyerCategoryHandler *buyerhandler.CategoryHandler
+	var buyerProductHandler *buyerhandler.ProductHandler
+	var buyerAddressHandler *buyerhandler.AddressHandler
+	var buyerCartHandler *buyerhandler.CartHandler
+	var buyerOrderConfirmHandler *buyerhandler.OrderConfirmHandler
+	var buyerOrderCreateHandler *buyerhandler.OrderCreateHandler
+	var buyerOrderHandler *buyerhandler.BuyerOrderHandler
+	var adminCategoryHandler *adminhandler.CategoryHandler
+	var adminShopHandler *adminhandler.ShopHandler
+	var sellerProductHandler *sellerhandler.ProductHandler
+	var sellerOrderHandler *sellerhandler.OrderHandler
+	var sellerShopHandler *sellerhandler.ShopHandler
 	smsService := service.NewSMSService(cfg.Env)
 	smsHandler := commonhandler.NewSMSHandler(smsService)
 	uploadService := service.NewUploadService(cfg.UploadDir)
@@ -54,12 +71,69 @@ func main() {
 		txDemoHandler = commonhandler.NewTxDemoHandler(userService)
 		authService := service.NewAuthService(userRepo, smsService, cfg.JWTSecret)
 		authHandler = commonhandler.NewAuthHandler(cfg, authService)
+		categoryRepo := repository.NewCategoryRepository(dbConn)
+		categoryService := service.NewCategoryService(categoryRepo)
+		buyerCategoryHandler = buyerhandler.NewCategoryHandler(categoryService)
+		adminCategoryHandler = adminhandler.NewCategoryHandler(categoryService)
+
+		shopRepo := repository.NewShopRepository(dbConn)
+		shopSvc := service.NewShopService(shopRepo)
+		adminShopHandler = adminhandler.NewShopHandler(shopSvc)
+		sellerShopHandler = sellerhandler.NewShopHandler(shopSvc)
+		productRepo := repository.NewProductRepository(dbConn)
+		productService := service.NewProductService(productRepo, categoryRepo, shopRepo)
+		sellerProductHandler = sellerhandler.NewProductHandler(productService)
+		buyerProductHandler = buyerhandler.NewProductHandler(productService)
+
+		addressRepo := repository.NewAddressRepository(dbConn)
+		addressService := service.NewAddressService(addressRepo)
+		buyerAddressHandler = buyerhandler.NewAddressHandler(addressService)
+
+		cartRepo := repository.NewCartRepository(dbConn)
+		cartService := service.NewCartService(cartRepo, productRepo, shopRepo)
+		buyerCartHandler = buyerhandler.NewCartHandler(cartService)
+
+		systemConfigRepo := repository.NewSystemConfigRepository(dbConn)
+		orderConfirmService := service.NewOrderConfirmService(cartRepo, productRepo, shopRepo, addressRepo, systemConfigRepo)
+		buyerOrderConfirmHandler = buyerhandler.NewOrderConfirmHandler(orderConfirmService)
+		orderRepo := repository.NewOrderRepository(dbConn)
+		orderCreateService := service.NewOrderCreateService(txManager, cartRepo, productRepo, shopRepo, addressRepo, systemConfigRepo, orderRepo)
+		buyerOrderCreateHandler = buyerhandler.NewOrderCreateHandler(orderCreateService)
+		buyerOrderService := service.NewBuyerOrderService(txManager, orderRepo, productRepo, shopRepo, cartService)
+		buyerOrderHandler = buyerhandler.NewBuyerOrderHandler(buyerOrderService)
+		sellerOrderService := service.NewSellerOrderService(txManager, orderRepo, productRepo)
+		sellerOrderHandler = sellerhandler.NewOrderHandler(sellerOrderService)
+
+		if !cfg.OrderSchedulerDisabled {
+			scheduleSvc := service.NewOrderScheduleService(txManager, orderRepo, productRepo, systemConfigRepo)
+			log.Info("order schedule: enabled", zap.Duration("tick", time.Minute))
+			go runOrderScheduleLoop(log, scheduleSvc)
+		}
 	} else {
 		log.Warn("database dsn is empty, tx demo and auth endpoints disabled")
 		authHandler = commonhandler.NewAuthHandler(cfg, nil)
 	}
 
-	engine := router.New(log, cfg, txDemoHandler, smsHandler, authHandler, uploadHandler)
+	engine := router.New(
+		log,
+		cfg,
+		txDemoHandler,
+		smsHandler,
+		authHandler,
+		uploadHandler,
+		buyerCategoryHandler,
+		buyerProductHandler,
+		buyerAddressHandler,
+		buyerCartHandler,
+		buyerOrderConfirmHandler,
+		buyerOrderCreateHandler,
+		buyerOrderHandler,
+		adminCategoryHandler,
+		adminShopHandler,
+		sellerProductHandler,
+		sellerOrderHandler,
+		sellerShopHandler,
+	)
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Info("server starting",
 		zap.String("app_name", cfg.AppName),
@@ -71,6 +145,15 @@ func main() {
 
 	if err := engine.Run(addr); err != nil {
 		log.Fatal("server stopped with error", zap.Error(err))
+	}
+}
+
+func runOrderScheduleLoop(log *zap.Logger, s *service.OrderScheduleService) {
+	s.RunTick(context.Background(), log)
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		s.RunTick(context.Background(), log)
 	}
 }
 

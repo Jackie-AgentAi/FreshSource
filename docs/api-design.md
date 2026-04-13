@@ -2,7 +2,7 @@
 
 > **依据**：`docs/requirement.md`、`CLAUDE.md`、`docs/architecture.md`  
 > **终端映射**：订货端 → `/api/v1/buyer/` · 发货端 → `/api/v1/seller/` · 管理后台 → `/api/v1/admin/` · 公共 → `/api/v1/common/`  
-> **版本**：**v1.1** · **日期**：2026-04-13  
+> **版本**：**v1.1.4** · **日期**：2026-04-14（v1.1.4：§6.9 店铺入驻与 admin 审核最小契约；继承 v1.1.1～v1.1.3）  
 > **支付**：无；不涉及任何支付回调接口。  
 > **文档套系**：与 `docs/task-list.md` **v1.1**、`docs/db-design.md` **v1.1** 同窗对齐（修订需同步评估另两份）。
 
@@ -73,6 +73,8 @@
 | 20001 | 手机号已注册 | 注册 |
 | 20002 | 账号或密码错误 | 登录 |
 | 20003 | 验证码错误或过期 | 登录 / 短信 |
+| 20004 | 地址数量超过上限 | 新增地址（超过20条） |
+| 20005 | 购物车条目超上限（100） | 加入购物车 |
 | 30001 | 商品不存在或已下架 / 不可售 | 加购、下单前校验 |
 | 30002 | 库存不足 | `POST /buyer/cart`、`POST /buyer/orders`；**禁止部分建单** |
 | 40001 | 订单不存在 | 订单详情与动作 |
@@ -384,7 +386,95 @@
 { "order_ids": [101, 102] }
 ```
 
-### 6.3 GET `/buyer/home`（data 示例）
+### 6.3 GET `/buyer/orders`
+
+**Query**：`status?`（与 `orders.status` 一致）、`page`、`page_size`（见 §1.2 / §1.3）。
+
+**Response data**：
+
+```json
+{
+  "list": [
+    {
+      "id": 101,
+      "order_no": "FM20260414120000123456",
+      "shop_id": 10,
+      "shop_name": "某某生鲜",
+      "status": 0,
+      "total_amount": "100.00",
+      "freight_amount": "5.00",
+      "pay_amount": "105.00",
+      "item_count": 3,
+      "created_at": "2026-04-14T12:00:00+08:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total": 1,
+    "total_pages": 1
+  }
+}
+```
+
+### 6.4 GET `/buyer/orders/:id`
+
+**Response data**（字段可随实现略增，须为 **snake_case**）：
+
+```json
+{
+  "id": 101,
+  "order_no": "FM20260414120000123456",
+  "shop_id": 10,
+  "shop_name": "某某生鲜",
+  "status": 3,
+  "settlement_status": 0,
+  "total_amount": "100.00",
+  "freight_amount": "0.00",
+  "discount_amount": "0.00",
+  "pay_amount": "100.00",
+  "receiver_name": "张三",
+  "receiver_phone": "13800000000",
+  "receiver_address": "某某路 1 号",
+  "delivery_type": 1,
+  "buyer_remark": "",
+  "cancel_reason": "",
+  "created_at": "2026-04-14T12:00:00+08:00",
+  "updated_at": "2026-04-14T12:30:00+08:00",
+  "delivered_at": "2026-04-14T14:00:00+08:00",
+  "completed_at": null,
+  "items": [
+    {
+      "product_id": 1,
+      "sku_id": null,
+      "product_name": "土豆",
+      "product_image": "/uploads/...",
+      "unit": "斤",
+      "price": "2.50",
+      "quantity": "5",
+      "subtotal": "12.50"
+    }
+  ]
+}
+```
+
+**错误**：不存在或不属于当前买家 → **40001**；其它系统错误 → **10000**。
+
+### 6.5 PUT `/buyer/orders/:id/cancel` · PUT `/buyer/orders/:id/receive`
+
+- **cancel** Body：`{ "cancel_reason": "可选，最长 255" }`；**仅 `status=0`**，否则 **40002**；成功则 **加回库存**并写 **`order_logs`**（`0→5`）。
+- **receive**：**仅 `status=3` → `4`**，否则 **40002**；成功写 **`order_logs`**（`3→4`）。
+
+**成功 Response data**：`{ "ok": true }`
+
+### 6.6 POST `/buyer/orders/:id/reorder` · DELETE `/buyer/orders/:id`
+
+- **reorder**：按 `order_items` 调用与 `POST /buyer/cart` 相同的加购校验；单条失败返回 **30001 / 30002 / 20005** 等（与购物车一致）；订单不存在 → **40001**。
+- **DELETE**：**软删**；**仅 `status in (4,5)`**，否则 **40002**。
+
+**成功 Response data**：`{ "ok": true }`
+
+### 6.7 GET `/buyer/home`（data 示例）
 
 ```json
 {
@@ -393,6 +483,45 @@
   "recommend_products": []
 }
 ```
+
+### 6.8 Seller `/seller/orders`（列表 / 详情 / 履约动作）
+
+资源归属：`orders.seller_id` = 当前 JWT `user_id`（与建单写入一致）。
+
+**GET `/seller/orders`**  
+Query：`status?`、`page`、`page_size`。  
+**Response data**：`list[]` 元素示例字段：`id`、`order_no`、`buyer_id`、`status`、`total_amount`、`freight_amount`、`pay_amount`、`item_count`、`receiver_name`、`receiver_phone`、`receiver_address`、`created_at`；外加标准 `pagination`。
+
+**GET `/seller/orders/:id`**  
+**Response data**：与订货端详情类似（`snake_case`），含 `shop_id`、`buyer_id`、`items[]`、`seller_remark`、`confirmed_at`、`delivered_at`、`completed_at` 等快照字段。不存在或不归属当前卖家 → **40001**。
+
+**PUT `/seller/orders/:id/confirm`**：仅 **`status=0` → `1`**；写 **`order_logs`（0→1）**、`confirmed_at`；否则 **40002**。
+
+**PUT `/seller/orders/:id/reject`**：Body `{ "reason": "必填" }`；仅 **`0` → `5`**；**加回库存**、`cancel_by=2`、写 **`order_logs`（0→5）**；原因为空 → **10001**；状态非法 → **40002**。
+
+**PUT `/seller/orders/:id/deliver`**：仅 **`1` → `2`**；写 **`order_logs`（1→2）**。
+
+**PUT `/seller/orders/:id/arrived`**：仅 **`2` → `3`**；写 **`order_logs`（2→3）**、`delivered_at`。
+
+**PUT `/seller/orders/:id/remark`**：Body `{ "seller_remark": "最长 255" }`；仅校验订单归属，**不改 `status`**（不写 `order_logs`）。
+
+以上动作成功时 **Response data**：`{ "ok": true }`（与订货端动作一致）。
+
+### 6.9 店铺入驻与审核（卖家 + 管理端）
+
+**卖家** `POST /seller/shop/apply`：Body 含 `shop_name`（必填）及 `logo`、`description`、`contact_phone`、`province`、`city`、`district`、`address`、`business_license`、`latitude`、`longitude` 等；**同一 `user_id` 仅允许一条店铺**（`uk_user_id`），重复 → **10001**。成功 **data**：`{ "shop_id": n }`；新建 `audit_status=0`。
+
+**卖家** `GET /seller/shop/audit-status`：**data** 含 `shop_id`、`shop_name`、`audit_status`、`audit_remark`、`status`、`business_license`；无店铺 → **10001**。
+
+**卖家** `PUT /seller/shop`：Body 与 apply 同结构；若当前 `audit_status` 为 **已通过(1)** 或 **已拒绝(2)**，保存后 **重置为待审核(0)** 并清空 `audit_remark`（需重新审核）；待审核(0) 则仅更新资料。
+
+**卖家** `PUT /seller/shop/status`：Body `{ "status": 0|1 }`（关店/营业）。
+
+**管理端** `GET /admin/shops`：Query `audit_status?`、`page`、`page_size`；**data** 为 `list` + `pagination`（字段 `snake_case`）。
+
+**管理端** `GET /admin/shops/:id`、**PUT `/admin/shops/:id/audit`**（Body：`audit_status` **1=通过 / 2=拒绝**，`audit_remark`）、**PUT `/admin/shops/:id/close`**（强制 `status=0`）。店铺不存在 → **10001**；非法 `audit_status` → **10001**。
+
+**AC-7 对齐**：买家商品列表/可见详情/加购要求店铺 **`audit_status=1` 且 `status=1`**；`POST /buyer/orders` 与 confirm 沿用既有 **`50001`** 语义（店铺未通过或不可售）。
 
 ---
 
@@ -408,6 +537,8 @@
 | 超时取消/完成 | （定时任务，无 HTTP） | 同左 | - |
 | 对账标记 | - | - | PUT .../settlement |
 | 退货流转 | - | - | 可选 PUT .../status |
+
+**订单超时（MVP）**：由 **API 进程内**定时任务执行（默认每 **1 分钟**一轮），从 **`system_configs`** 读取 `order_auto_cancel_minutes`、`order_auto_complete_hours`；**无独立 HTTP**。待确认超时：`0→5`、加回库存、`order_logs.operator_role=4`；已送达超时：`3→4`、`order_logs.operator_role=4`。本地/联调可通过环境变量 **`ORDER_SCHEDULER_DISABLED`** 关闭任务。
 
 ---
 
