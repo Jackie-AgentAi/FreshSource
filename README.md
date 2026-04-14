@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.2.1 Release (2026-04-14)
+
+订货端 App 完成 **P1-4 页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：主页/分类/搜索/商品详情/店铺主页；购物车与确认订单（多店拆单预览）；地址 CRUD 与默认地址；订单列表/详情、取消、收货、再来一单；`docs/task-list.md` 中 `P1-4-1` 至 `P1-4-3` 已完成。
+
 ## v0.2.0 Release (2026-04-14)
 
 后端 **P1 核心交易链路** 与 **店铺入驻/审核** 最小闭环，详见 [`CHANGELOG.md`](CHANGELOG.md)。

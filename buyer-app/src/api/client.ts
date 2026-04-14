@@ -4,6 +4,16 @@ import { refreshTokenRequest } from '@/api/auth';
 import { API_BASE_URL, BUSINESS_SUCCESS_CODE, TOKEN_INVALID_CODE } from '@/constants/api';
 import { useAuthStore } from '@/store/auth';
 
+export class BusinessError extends Error {
+  code: number;
+
+  constructor(code: number, message: string) {
+    super(message);
+    this.code = code;
+    this.name = 'BusinessError';
+  }
+}
+
 export const client = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -29,7 +39,7 @@ client.interceptors.response.use(async (response) => {
     const store = useAuthStore.getState();
     if (!store.refreshToken) {
       await store.clearAuth();
-      throw new Error(body.message || 'token invalid');
+      throw new BusinessError(TOKEN_INVALID_CODE, body.message || 'token invalid');
     }
 
     try {
@@ -37,7 +47,7 @@ client.interceptors.response.use(async (response) => {
       const refreshed = await refreshTokenRequest(store.refreshToken);
       if (refreshed.code !== BUSINESS_SUCCESS_CODE) {
         await store.clearAuth();
-        throw new Error(refreshed.message || 'refresh token failed');
+        throw new BusinessError(refreshed.code, refreshed.message || 'refresh token failed');
       }
 
       await store.setAuth({
@@ -60,5 +70,5 @@ client.interceptors.response.use(async (response) => {
     }
   }
 
-  throw new Error(body.message || 'request failed');
+  throw new BusinessError(body.code ?? -1, body.message || 'request failed');
 });

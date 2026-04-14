@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-04-14
+
+### Added
+
+- **Buyer App pages (P1-4-1 ~ P1-4-3)**：完成首页/分类/搜索/商品详情/店铺主页；购物车、确认订单、地址管理；订单列表/详情、取消、收货与再来一单全链路页面。
+- **Buyer App data layer**：新增 `src/api/{catalog,cart,address,buyerOrder,envelope}.ts`、`src/types/{catalog,cart,address,order,api}.ts`、`src/store/checkoutDraft.ts`、`src/constants/{checkout,order}.ts` 与通用 `theme/components/utils` 基础设施。
+- **Buyer App routing**：新增 `category`、`product`、`shop`、`search`、`checkout`、`addresses`、`orders` 路由栈与入口，支持从“我的”进入地址与订单管理。
+
+### Changed
+
+- **Task progress**：`docs/task-list.md` 中 `P1-4-1`、`P1-4-2`、`P1-4-3` 状态更新为 `done`（日期 `2026-04-14`）。
+- **Error handling UX**：前端 `client` 新增 `BusinessError(code,message)`，订单详情对 `40002` 进行明确提示（符合任务验收要求）。
+- **Buyer app version**：`buyer-app/package.json` 与 `buyer-app/package-lock.json` 版本提升至 `0.2.1`。
+
+### Notes
+
+- 本版本聚焦 **订货端 App P1 页面闭环**，用于联调演示主路径：选品 → 加购 → 确认订单 → 下单 → 订单状态动作。
+- 本地 `tsc` 在当前环境仍可能受 Expo 基座 `module` 选项兼容影响，与本次业务改动无直接冲突。
+
 ## [0.2.0] - 2026-04-14
 
 ### Added
