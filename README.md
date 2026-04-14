@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.2.2 Release (2026-04-14)
+
+发货端 App 完成 **P1-5 页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：工作台接入真实数据看板；商品列表/发布/编辑/上下架；订单列表/详情与接单、拒单、发货、送达、备注动作；`docs/task-list.md` 中 `P1-5-1` 至 `P1-5-3` 已完成。
+
 ## v0.2.1 Release (2026-04-14)
 
 订货端 App 完成 **P1-4 页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。

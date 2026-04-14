@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-04-14
+
+### Added
+
+- **Seller App dashboard (P1-5-1)**：工作台接入真实后端数据，展示店铺审核/营业状态与订单核心计数（总数、待确认、配送中、已送达、已完成、已取消），支持下拉刷新与错误重试。
+- **Seller App product management (P1-5-2)**：新增商品列表、发布、编辑、上下架能力；支持状态筛选（审核中/上架/下架），并在工作台提供“商品管理”入口。
+- **Seller App order fulfillment (P1-5-3)**：新增订单列表与详情页，接入接单、拒单、发货、送达、卖家备注等履约动作，形成与买家端联调所需主路径闭环。
+- **Seller App module infrastructure**：新增 `src/api/{dashboard,product,order}.ts`、`src/types/{api,dashboard,product,order}.ts`、`src/constants/order.ts`、`src/components/ProductForm.tsx`、`src/utils/media.ts` 及 `products/orders` 路由栈。
+
+### Changed
+
+- **Task progress**：`docs/task-list.md` 中 `P1-5-1`、`P1-5-2`、`P1-5-3` 更新为 `done`（日期 `2026-04-14`）。
+- **Seller app version**：`seller-app/package.json` 版本提升至 `0.2.2`。
+
+### Notes
+
+- 本版本聚焦 **发货端 App P1 页面闭环**，用于端到端演示履约路径：订单接单 → 发货 → 送达（并支持拒单与备注）。
+- 发货端商品发布后默认“审核中”展示逻辑已与后端契约对齐。
+
 ## [0.2.1] - 2026-04-14
 
 ### Added

@@ -10,5 +10,13 @@ export default function RootLayout() {
     hydrate();
   }, [hydrate]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)/login" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="orders" options={{ headerShown: false }} />
+      <Stack.Screen name="products" options={{ headerShown: false }} />
+    </Stack>
+  );
 }
