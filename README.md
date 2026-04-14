@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.3.1 Release (2026-04-14)
+
+管理后台 Web 完成 **P2-2 第一迭代页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：工作台真实数据看板；用户/店铺/商品/分类/订单/轮播/系统配置页全部对接 `admin` API；订单页筛选与导出参数一致（含时间区间）；`docs/task-list.md` 中 **P2-2-1～P2-2-3** 已完成。
+
 ## v0.3.0 Release (2026-04-14)
 
 后端完成 **P2-1 管理端业务 API**（用户/商品/订单/轮播与系统配置/可选退货与日志），详见 [`CHANGELOG.md`](CHANGELOG.md)。

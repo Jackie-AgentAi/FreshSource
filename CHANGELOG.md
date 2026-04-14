@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-04-14
+
+### Added
+
+- **Admin Web pages (P2-2-1 ~ P2-2-3)**：完成工作台看板、用户/店铺/商品/分类/订单/轮播/配置管理页面，全部对接真实 `admin` API。
+- **Dashboard metrics**：工作台聚合订单状态统计（含退货状态）与待审核店铺数，支持刷新与错误态展示。
+- **Order ops UI**：订单页新增筛选项（`status`、`shop_id`、`buyer_id`、`settlement_status`、`created_from`、`created_to`）并支持导出 CSV。
+- **Admin web module infrastructure**：新增 `src/services/admin.ts` 统一封装管理端请求与类型，新增 `Users/Shops/Products/Categories/Orders/Banners/Configs` 页面路由与菜单。
+
+### Changed
+
+- **Filter-export consistency**：订单导出改为严格复用当前筛选条件，确保“下载内容与列表筛选一致”（P2-2-3 验收项）。
+- **Task progress**：`docs/task-list.md` 中 `P2-2-1`、`P2-2-2`、`P2-2-3` 更新为 `done`（日期 `2026-04-14`）。
+- **Admin web version**：`admin-web/package.json` 与 `admin-web/package-lock.json` 版本提升至 `0.3.1`。
+
+### Notes
+
+- 本版本聚焦 **管理后台 Web P2-2 首迭代闭环**，前置支撑后续运营功能（评价、看板增强、高级筛选等）。
+
 ## [0.3.0] - 2026-04-14
 
 ### Added
