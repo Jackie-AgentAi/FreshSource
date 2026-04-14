@@ -145,7 +145,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	tokens, user, err := h.authService.LoginByPassword(c.Request.Context(), req.Phone, req.Password)
 	if err != nil {
-		if err == service.ErrInvalidCredential {
+		if err == service.ErrInvalidCredential || err == service.ErrUserDisabled {
 			response.Fail(c, 20002, "account or password error")
 			return
 		}
@@ -192,7 +192,7 @@ func (h *AuthHandler) LoginSMS(c *gin.Context) {
 		switch err {
 		case service.ErrInvalidSMSCode:
 			response.Fail(c, 20003, "verification code invalid or expired")
-		case service.ErrInvalidCredential:
+		case service.ErrInvalidCredential, service.ErrUserDisabled:
 			response.Fail(c, 20002, "account or password error")
 		default:
 			c.JSON(http.StatusOK, response.Envelope{Code: 10000, Message: "system error", Data: nil})

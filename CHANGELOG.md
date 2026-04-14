@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-14
+
+### Added
+
+- **Admin API（P2-1 运营闸门后端）**
+  - **用户**：`GET /admin/users`、`PUT /admin/users/:id/status`；登录侧校验禁用账号（与任务验收一致）。
+  - **商品**：`GET /admin/products`、`PUT /admin/products/:id/audit`、`PUT /admin/products/:id/status`、`PUT /admin/products/:id/recommend`。
+  - **订单**：`GET /admin/orders`（多条件筛选）、`GET /admin/orders/:id`、`GET /admin/orders/export`（CSV，UTF-8 BOM，最多 5000 行）、`PUT /admin/orders/:id/settlement`（仅 `settlement_status`，不改 `orders.status`）。
+  - **轮播与配置**：`GET|POST /admin/banners`、`PUT|DELETE /admin/banners/:id`；`GET /admin/configs`、`PUT /admin/configs/:key`（含 MVP 键值校验；定时任务每轮读库，改 `order_auto_cancel_minutes` 等在下轮生效）。
+  - **退货（可选）**：`PUT /admin/orders/:id/status`（允许 `4→6`、`6→7` 加回库存、`6→4`）、`GET /admin/orders/:id/logs`（`order_logs` 审计列表）。
+- **支撑模块**：`Banner` 模型与 `banner_repository`；`system_configs` 列表/按 key 更新；`AdminOrderService` 扩展事务、导出、对账、退货与日志查询；`ShopRepository.FindShopNamesByIDs` 等。
+
+### Changed
+
+- **Task progress**：`docs/task-list.md` 中 `P2-1-1`～`P2-1-6` 更新为 `done`（日期 `2026-04-14`）。
+- **API 契约**：`docs/api-design.md` 递增至 **v1.1.8**（管理端订单、轮播/配置、退货与日志说明）。
+- **App 版本号**：`buyer-app` / `seller-app` 的 `package.json`（及 `buyer-app/package-lock.json`）对齐为 **0.3.0**（与仓库里程碑版本一致）。
+
+### Notes
+
+- 本版本聚焦 **管理端业务 API（P2-1）闭环**，便于管理后台 Web（P2-2）对接四闸门与订单运营能力。
+- 请勿将本地 `buyer-app/.env`、`seller-app/.env` 提交入库（默认保持未跟踪即可）。
+
 ## [0.2.2] - 2026-04-14
 
 ### Added

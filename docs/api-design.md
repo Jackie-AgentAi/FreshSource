@@ -2,7 +2,7 @@
 
 > **依据**：`docs/requirement.md`、`CLAUDE.md`、`docs/architecture.md`  
 > **终端映射**：订货端 → `/api/v1/buyer/` · 发货端 → `/api/v1/seller/` · 管理后台 → `/api/v1/admin/` · 公共 → `/api/v1/common/`  
-> **版本**：**v1.1.4** · **日期**：2026-04-14（v1.1.4：§6.9 店铺入驻与 admin 审核最小契约；继承 v1.1.1～v1.1.3）  
+> **版本**：**v1.1.8** · **日期**：2026-04-14（v1.1.8：补充 5.6 admin 退货流转 `PUT /orders/:id/status` 与 `GET /orders/:id/logs`；继承 v1.1.1～v1.1.7）  
 > **支付**：无；不涉及任何支付回调接口。  
 > **文档套系**：与 `docs/task-list.md` **v1.1**、`docs/db-design.md` **v1.1** 同窗对齐（修订需同步评估另两份）。
 
@@ -298,6 +298,16 @@
 | PUT | `/orders/:id/settlement` | **MVP 对账**：Body: `settlement_status` 0/1 |
 | PUT | `/orders/:id/status` | **可选**：仅用于 `4→6`、`6→7`、`6→4`；强制写 `order_logs`，operator_role=3 |
 
+**GET `/orders`**：Query `status?`、`shop_id?`、`buyer_id?`、`settlement_status?`、`created_from?`、`created_to?`（均为 **RFC3339** 时间字符串，闭区间过滤 `created_at`）、`page`、`page_size`；**data** 为 `list` + `pagination`；`list[]` 含 `shop_name`、`settlement_status` 等与 `orders` 表一致的核心字段。
+
+**GET `/orders/export`**：Query 与 **`GET /orders` 相同**（**忽略** `page` / `page_size`）；响应为 **`text/csv; charset=utf-8`** 文件流，`Content-Disposition: attachment`；列为 `snake_case` 表头；**最多导出 5000 行**（按 `id` 倒序），UTF-8 带 **BOM** 便于 Excel 打开。
+
+**PUT `/orders/:id/settlement`**：Body `{ "settlement_status": 0|1 }`；**仅更新** `orders.settlement_status`，**不得**修改 `orders.status`，不写 `order_logs`。订单不存在 → **40001**；非法 `settlement_status` → **10001**。
+
+**PUT `/orders/:id/status`（可选 · 退货）**：Body `{ "status": 6|7|4, "remark": "可选，最长255" }`；**仅允许**：已完成 **`4` → `6`（退货中）**、退货中 **`6` → `7`（已退货）** 或 **`6` → `4`（驳回退货）**；其它当前状态或目标组合 → **40002**。事务内更新 `orders.status` 并写 **`order_logs`**（`from_status`→`to_status`），`operator_role=3`（管理端），`operator_id` 为当前管理员 `user_id`。其中 **`6` → `7`** 时按订单行 **`order_items`** 对 `products.stock` **加回库存**（与取消/拒单回滚语义一致）。成功 **data**：`{ "ok": true }`。
+
+**GET `/orders/:id/logs`**：**data** 为 `{ "list": [ { "id", "order_id", "from_status", "to_status", "operator_id", "operator_role", "remark", "created_at" } ] }`（`created_at` 为 **RFC3339**）；订单不存在 → **40001**。
+
 ### 5.7 评价
 
 | 方法 | 路径 | 说明 |
@@ -315,6 +325,14 @@
 | DELETE | `/banners/:id` | |
 | GET | `/configs` | 配置列表 |
 | PUT | `/configs/:key` | Body: `config_value` |
+
+**GET `/banners`**：Query `position?`、`status?`、`page`、`page_size`；**data** 为 `list` + `pagination`；`list[]` 字段与表 `banners` 一致（`snake_case`，含 `start_time` / `end_time` 可为 `null`，时间为 **RFC3339** 字符串）。
+
+**POST `/banners`**、**PUT `/banners/:id`**：Body 含 `title`、`image_url`（必填）、`link_type`（**0～3**）、`link_value`、`position`（可空，默认 `home`）、`sort_order`、`status`（**0=隐藏 / 1=显示**）、`start_time` / `end_time`（可省略或 `null`，非空时为 **RFC3339**）。POST 成功 **data**：`{ "id": n }`；PUT/DELETE 成功 **data**：`{ "ok": true }`。记录不存在 → **10001**；参数非法 → **10001**。
+
+**GET `/configs`**：**data** 为 `{ "list": [ { "id", "config_key", "config_value", "remark", "created_at", "updated_at" } ] }`。
+
+**PUT `/configs/:key`**：Body `{ "config_value": "..." }`（非空）；**仅更新**已有行的 `config_value`（`config_key` 不存在 → **10001**）。对 MVP 预设键 `order_auto_cancel_minutes`、`order_auto_complete_hours`、`review_deadline_days` 校验为 **正整数**；`delivery_base_fee`、`delivery_free_threshold` 校验为 **非负小数**；其它键仅校验非空字符串。**不改**订单等业务表；定时任务每轮从库读取配置，故修改 `order_auto_cancel_minutes` 等在**下一轮调度**即对新逻辑生效。
 
 ### 5.9 管理员（MVP 可后置）
 
@@ -523,6 +541,18 @@ Query：`status?`、`page`、`page_size`。
 
 **AC-7 对齐**：买家商品列表/可见详情/加购要求店铺 **`audit_status=1` 且 `status=1`**；`POST /buyer/orders` 与 confirm 沿用既有 **`50001`** 语义（店铺未通过或不可售）。
 
+### 6.10 管理端商品审核（admin）
+
+**管理端** `GET /admin/products`：Query `status?`、`shop_id?`、`keyword?`、`page`、`page_size`；**data** 为 `list` + `pagination`（字段 `snake_case`）。
+
+**管理端** `PUT /admin/products/:id/audit`：Body `{ "audit_status": 1|2 }`。`audit_status=1` 表示审核通过：当库存 `stock > 0` 时置 `status=1`（上架），库存 `stock <= 0` 时置 `status=0`（下架）；`audit_status=2` 表示驳回并置 `status=0`。
+
+**管理端** `PUT /admin/products/:id/status`：Body `{ "status": 0|1 }`；`status=1` 时要求 `stock > 0`，否则返回非法参数。
+
+**管理端** `PUT /admin/products/:id/recommend`：Body `{ "is_recommend": 0|1 }`。
+
+商品不存在 → **30001**；非法 `audit_status` / `status` / `is_recommend` → **10001**。
+
 ---
 
 ## 7. 状态机与 HTTP 映射（摘要）
@@ -536,7 +566,7 @@ Query：`status?`、`page`、`page_size`。
 | 收货完成 | PUT .../receive | - | - |
 | 超时取消/完成 | （定时任务，无 HTTP） | 同左 | - |
 | 对账标记 | - | - | PUT .../settlement |
-| 退货流转 | - | - | 可选 PUT .../status |
+| 退货流转 | - | - | 可选 `PUT /admin/orders/:id/status` |
 
 **订单超时（MVP）**：由 **API 进程内**定时任务执行（默认每 **1 分钟**一轮），从 **`system_configs`** 读取 `order_auto_cancel_minutes`、`order_auto_complete_hours`；**无独立 HTTP**。待确认超时：`0→5`、加回库存、`order_logs.operator_role=4`；已送达超时：`3→4`、`order_logs.operator_role=4`。本地/联调可通过环境变量 **`ORDER_SCHEDULER_DISABLED`** 关闭任务。
 

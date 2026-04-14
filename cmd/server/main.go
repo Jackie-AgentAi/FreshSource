@@ -52,6 +52,11 @@ func main() {
 	var buyerOrderHandler *buyerhandler.BuyerOrderHandler
 	var adminCategoryHandler *adminhandler.CategoryHandler
 	var adminShopHandler *adminhandler.ShopHandler
+	var adminUserHandler *adminhandler.UserHandler
+	var adminProductHandler *adminhandler.ProductHandler
+	var adminOrderHandler *adminhandler.OrderHandler
+	var adminBannerHandler *adminhandler.BannerHandler
+	var adminConfigHandler *adminhandler.ConfigHandler
 	var sellerProductHandler *sellerhandler.ProductHandler
 	var sellerOrderHandler *sellerhandler.OrderHandler
 	var sellerShopHandler *sellerhandler.ShopHandler
@@ -80,8 +85,11 @@ func main() {
 		shopSvc := service.NewShopService(shopRepo)
 		adminShopHandler = adminhandler.NewShopHandler(shopSvc)
 		sellerShopHandler = sellerhandler.NewShopHandler(shopSvc)
+		adminUserService := service.NewAdminUserService(userRepo)
+		adminUserHandler = adminhandler.NewUserHandler(adminUserService)
 		productRepo := repository.NewProductRepository(dbConn)
 		productService := service.NewProductService(productRepo, categoryRepo, shopRepo)
+		adminProductHandler = adminhandler.NewProductHandler(productService)
 		sellerProductHandler = sellerhandler.NewProductHandler(productService)
 		buyerProductHandler = buyerhandler.NewProductHandler(productService)
 
@@ -103,6 +111,14 @@ func main() {
 		buyerOrderHandler = buyerhandler.NewBuyerOrderHandler(buyerOrderService)
 		sellerOrderService := service.NewSellerOrderService(txManager, orderRepo, productRepo)
 		sellerOrderHandler = sellerhandler.NewOrderHandler(sellerOrderService)
+		adminOrderService := service.NewAdminOrderService(txManager, orderRepo, shopRepo, productRepo)
+		adminOrderHandler = adminhandler.NewOrderHandler(adminOrderService)
+
+		bannerRepo := repository.NewBannerRepository(dbConn)
+		bannerService := service.NewBannerService(bannerRepo)
+		adminBannerHandler = adminhandler.NewBannerHandler(bannerService)
+		adminSystemConfigService := service.NewAdminSystemConfigService(systemConfigRepo)
+		adminConfigHandler = adminhandler.NewConfigHandler(adminSystemConfigService)
 
 		if !cfg.OrderSchedulerDisabled {
 			scheduleSvc := service.NewOrderScheduleService(txManager, orderRepo, productRepo, systemConfigRepo)
@@ -130,6 +146,11 @@ func main() {
 		buyerOrderHandler,
 		adminCategoryHandler,
 		adminShopHandler,
+		adminUserHandler,
+		adminProductHandler,
+		adminOrderHandler,
+		adminBannerHandler,
+		adminConfigHandler,
 		sellerProductHandler,
 		sellerOrderHandler,
 		sellerShopHandler,

@@ -40,6 +40,11 @@ func New(
 	buyerOrderHandler *buyerhandler.BuyerOrderHandler,
 	adminCategoryHandler *adminhandler.CategoryHandler,
 	adminShopHandler *adminhandler.ShopHandler,
+	adminUserHandler *adminhandler.UserHandler,
+	adminProductHandler *adminhandler.ProductHandler,
+	adminOrderHandler *adminhandler.OrderHandler,
+	adminBannerHandler *adminhandler.BannerHandler,
+	adminConfigHandler *adminhandler.ConfigHandler,
 	sellerProductHandler *sellerhandler.ProductHandler,
 	sellerOrderHandler *sellerhandler.OrderHandler,
 	sellerShopHandler *sellerhandler.ShopHandler,
@@ -166,6 +171,34 @@ func New(
 			adminGroup.GET("/shops/:id", adminShopHandler.GetShop)
 			adminGroup.PUT("/shops/:id/audit", adminShopHandler.AuditShop)
 			adminGroup.PUT("/shops/:id/close", adminShopHandler.CloseShop)
+		}
+		if adminUserHandler != nil {
+			adminGroup.GET("/users", adminUserHandler.ListUsers)
+			adminGroup.PUT("/users/:id/status", adminUserHandler.UpdateUserStatus)
+		}
+		if adminProductHandler != nil {
+			adminGroup.GET("/products", adminProductHandler.ListProducts)
+			adminGroup.PUT("/products/:id/audit", adminProductHandler.AuditProduct)
+			adminGroup.PUT("/products/:id/status", adminProductHandler.UpdateProductStatus)
+			adminGroup.PUT("/products/:id/recommend", adminProductHandler.UpdateProductRecommend)
+		}
+		if adminOrderHandler != nil {
+			adminGroup.GET("/orders/export", adminOrderHandler.ExportOrders)
+			adminGroup.GET("/orders", adminOrderHandler.ListOrders)
+			adminGroup.GET("/orders/:id/logs", adminOrderHandler.GetOrderLogs)
+			adminGroup.GET("/orders/:id", adminOrderHandler.GetOrder)
+			adminGroup.PUT("/orders/:id/settlement", adminOrderHandler.UpdateSettlement)
+			adminGroup.PUT("/orders/:id/status", adminOrderHandler.UpdateOrderStatus)
+		}
+		if adminBannerHandler != nil {
+			adminGroup.GET("/banners", adminBannerHandler.ListBanners)
+			adminGroup.POST("/banners", adminBannerHandler.CreateBanner)
+			adminGroup.PUT("/banners/:id", adminBannerHandler.UpdateBanner)
+			adminGroup.DELETE("/banners/:id", adminBannerHandler.DeleteBanner)
+		}
+		if adminConfigHandler != nil {
+			adminGroup.GET("/configs", adminConfigHandler.ListConfigs)
+			adminGroup.PUT("/configs/:key", adminConfigHandler.UpdateConfig)
 		}
 	}
 

@@ -19,14 +19,16 @@ const (
 )
 
 var (
-	ErrProductNotFound       = errors.New("product not found")
-	ErrProductCoverRequired  = errors.New("product cover image is required")
-	ErrProductImagesTooMany  = errors.New("product images exceed max count 9")
-	ErrProductNameRequired   = errors.New("product name is required")
-	ErrProductNotAllowed     = errors.New("product operation not allowed")
-	ErrSellerShopNotFound    = errors.New("seller shop not found")
-	ErrProductStockNotEnough = errors.New("stock not enough")
-	ErrBatchPriceEmpty       = errors.New("batch price payload is empty")
+	ErrProductNotFound         = errors.New("product not found")
+	ErrProductCoverRequired    = errors.New("product cover image is required")
+	ErrProductImagesTooMany    = errors.New("product images exceed max count 9")
+	ErrProductNameRequired     = errors.New("product name is required")
+	ErrProductNotAllowed       = errors.New("product operation not allowed")
+	ErrSellerShopNotFound      = errors.New("seller shop not found")
+	ErrProductStockNotEnough   = errors.New("stock not enough")
+	ErrBatchPriceEmpty         = errors.New("batch price payload is empty")
+	ErrProductInvalidAudit     = errors.New("invalid product audit_status")
+	ErrProductInvalidRecommend = errors.New("invalid is_recommend")
 )
 
 type ProductService struct {
@@ -75,6 +77,7 @@ type ProductListItem struct {
 	StepBuy       float64  `json:"step_buy"`
 	Stock         int      `json:"stock"`
 	Status        int      `json:"status"`
+	IsRecommend   int      `json:"is_recommend"`
 	OriginPlace   string   `json:"origin_place"`
 	ShelfLife     string   `json:"shelf_life"`
 	StorageMethod string   `json:"storage_method"`
@@ -90,6 +93,38 @@ type BuyerProductQuery struct {
 	MaxPrice   *float64
 	Page       int
 	PageSize   int
+}
+
+type AdminProductListQuery struct {
+	Status   *int
+	ShopID   *uint64
+	Keyword  string
+	Page     int
+	PageSize int
+}
+
+type AdminProductListItem struct {
+	ID            uint64   `json:"id"`
+	ShopID        uint64   `json:"shop_id"`
+	CategoryID    uint64   `json:"category_id"`
+	Name          string   `json:"name"`
+	Subtitle      string   `json:"subtitle"`
+	CoverImage    string   `json:"cover_image"`
+	Images        []string `json:"images"`
+	Description   string   `json:"description"`
+	Price         float64  `json:"price"`
+	OriginalPrice *float64 `json:"original_price"`
+	Unit          string   `json:"unit"`
+	MinBuy        float64  `json:"min_buy"`
+	StepBuy       float64  `json:"step_buy"`
+	Stock         int      `json:"stock"`
+	Sales         uint64   `json:"sales"`
+	Status        int      `json:"status"`
+	IsRecommend   int      `json:"is_recommend"`
+	OriginPlace   string   `json:"origin_place"`
+	ShelfLife     string   `json:"shelf_life"`
+	StorageMethod string   `json:"storage_method"`
+	SortOrder     int      `json:"sort_order"`
 }
 
 type BuyerProductItem struct {
@@ -197,6 +232,119 @@ func (s *ProductService) ListBySeller(
 		result = append(result, mapProductListItem(p))
 	}
 	return result, total, nil
+}
+
+func (s *ProductService) AdminList(
+	ctx context.Context,
+	query AdminProductListQuery,
+) ([]AdminProductListItem, int64, error) {
+	page := query.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := query.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	products, total, err := s.productRepo.ListForAdmin(ctx, repository.AdminProductQuery{
+		Status:   query.Status,
+		ShopID:   query.ShopID,
+		Keyword:  query.Keyword,
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]AdminProductListItem, 0, len(products))
+	for _, p := range products {
+		images := make([]string, 0)
+		_ = json.Unmarshal([]byte(p.Images), &images)
+		out = append(out, AdminProductListItem{
+			ID:            p.ID,
+			ShopID:        p.ShopID,
+			CategoryID:    p.CategoryID,
+			Name:          p.Name,
+			Subtitle:      p.Subtitle,
+			CoverImage:    p.CoverImage,
+			Images:        images,
+			Description:   p.Description,
+			Price:         p.Price,
+			OriginalPrice: p.OriginalPrice,
+			Unit:          p.Unit,
+			MinBuy:        p.MinBuy,
+			StepBuy:       p.StepBuy,
+			Stock:         p.Stock,
+			Sales:         p.Sales,
+			Status:        p.Status,
+			IsRecommend:   p.IsRecommend,
+			OriginPlace:   p.OriginPlace,
+			ShelfLife:     p.ShelfLife,
+			StorageMethod: p.StorageMethod,
+			SortOrder:     p.SortOrder,
+		})
+	}
+	return out, total, nil
+}
+
+func (s *ProductService) AdminAudit(ctx context.Context, productID uint64, auditStatus int) error {
+	if productID == 0 {
+		return ErrProductNotFound
+	}
+	if auditStatus != 1 && auditStatus != 2 {
+		return ErrProductInvalidAudit
+	}
+	product, err := s.productRepo.FindByID(ctx, productID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrProductNotFound
+		}
+		return err
+	}
+	nextStatus := productStatusOffShelf
+	if auditStatus == 1 && product.Stock > 0 {
+		nextStatus = productStatusOnShelf
+	}
+	return s.productRepo.UpdateByID(ctx, productID, map[string]interface{}{
+		"status": nextStatus,
+	})
+}
+
+func (s *ProductService) AdminUpdateStatus(ctx context.Context, productID uint64, status int) error {
+	if status != productStatusOffShelf && status != productStatusOnShelf {
+		return ErrProductNotAllowed
+	}
+	product, err := s.productRepo.FindByID(ctx, productID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrProductNotFound
+		}
+		return err
+	}
+	if status == productStatusOnShelf && product.Stock <= 0 {
+		return ErrProductNotAllowed
+	}
+	return s.productRepo.UpdateByID(ctx, productID, map[string]interface{}{
+		"status": status,
+	})
+}
+
+func (s *ProductService) AdminUpdateRecommend(ctx context.Context, productID uint64, isRecommend int) error {
+	if isRecommend != 0 && isRecommend != 1 {
+		return ErrProductInvalidRecommend
+	}
+	if _, err := s.productRepo.FindByID(ctx, productID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrProductNotFound
+		}
+		return err
+	}
+	return s.productRepo.UpdateByID(ctx, productID, map[string]interface{}{
+		"is_recommend": isRecommend,
+	})
 }
 
 func (s *ProductService) ListForBuyer(
@@ -569,6 +717,7 @@ func mapProductListItem(p model.Product) ProductListItem {
 		StepBuy:       p.StepBuy,
 		Stock:         p.Stock,
 		Status:        p.Status,
+		IsRecommend:   p.IsRecommend,
 		OriginPlace:   p.OriginPlace,
 		ShelfLife:     p.ShelfLife,
 		StorageMethod: p.StorageMethod,

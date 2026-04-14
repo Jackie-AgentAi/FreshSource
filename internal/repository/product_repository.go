@@ -25,6 +25,14 @@ type BuyerProductQuery struct {
 	PageSize   int
 }
 
+type AdminProductQuery struct {
+	Status   *int
+	ShopID   *uint64
+	Keyword  string
+	Page     int
+	PageSize int
+}
+
 func NewProductRepository(db *gorm.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
@@ -67,6 +75,41 @@ func (r *ProductRepository) SoftDelete(ctx context.Context, id, shopID uint64) e
 		Model(&model.Product{}).
 		Where("id = ? AND shop_id = ? AND deleted_at IS NULL", id, shopID).
 		Update("deleted_at", gorm.Expr("NOW()")).Error
+}
+
+func (r *ProductRepository) ListForAdmin(
+	ctx context.Context,
+	queryInput AdminProductQuery,
+) ([]model.Product, int64, error) {
+	query := r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Where("deleted_at IS NULL")
+	if queryInput.Status != nil {
+		query = query.Where("status = ?", *queryInput.Status)
+	}
+	if queryInput.ShopID != nil {
+		query = query.Where("shop_id = ?", *queryInput.ShopID)
+	}
+	if keyword := strings.TrimSpace(queryInput.Keyword); keyword != "" {
+		likePattern := "%" + keyword + "%"
+		query = query.Where("(name LIKE ? OR subtitle LIKE ?)", likePattern, likePattern)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var products []model.Product
+	err := query.
+		Order("id DESC").
+		Offset((queryInput.Page - 1) * queryInput.PageSize).
+		Limit(queryInput.PageSize).
+		Find(&products).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (r *ProductRepository) ListByShop(
@@ -211,6 +254,17 @@ func (r *ProductRepository) UpdateWithTx(
 	return tx.WithContext(ctx).
 		Model(&model.Product{}).
 		Where("id = ? AND shop_id = ? AND deleted_at IS NULL", id, shopID).
+		Updates(updates).Error
+}
+
+func (r *ProductRepository) UpdateByID(
+	ctx context.Context,
+	productID uint64,
+	updates map[string]interface{},
+) error {
+	return r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Where("id = ? AND deleted_at IS NULL", productID).
 		Updates(updates).Error
 }
 

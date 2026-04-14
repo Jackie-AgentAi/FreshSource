@@ -112,6 +112,31 @@ func (r *ShopRepository) FindShopNameByID(ctx context.Context, id uint64) (strin
 	return x.ShopName, nil
 }
 
+// FindShopNamesByIDs 管理端订单列表等：仅排除已删店铺，不按审核/营业状态过滤。
+func (r *ShopRepository) FindShopNamesByIDs(ctx context.Context, ids []uint64) (map[uint64]string, error) {
+	if len(ids) == 0 {
+		return map[uint64]string{}, nil
+	}
+	type row struct {
+		ID       uint64 `gorm:"column:id"`
+		ShopName string `gorm:"column:shop_name"`
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).
+		Table("shops").
+		Select("id, shop_name").
+		Where("id IN ? AND deleted_at IS NULL", ids).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uint64]string, len(rows))
+	for _, rrow := range rows {
+		out[rrow.ID] = rrow.ShopName
+	}
+	return out, nil
+}
+
 func (r *ShopRepository) FindPublicByID(ctx context.Context, id uint64) (*ShopPublic, error) {
 	var shop ShopPublic
 	err := r.db.WithContext(ctx).

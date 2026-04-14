@@ -27,6 +27,7 @@ var (
 	ErrInvalidSMSCode    = errors.New("sms code invalid")
 	ErrInvalidToken      = errors.New("refresh token invalid")
 	ErrInvalidPassword   = errors.New("password invalid")
+	ErrUserDisabled      = errors.New("account disabled")
 )
 
 type AuthService struct {
@@ -99,6 +100,9 @@ func (s *AuthService) LoginByPassword(ctx context.Context, phone, password strin
 	if err != nil {
 		return AuthTokens{}, nil, ErrInvalidCredential
 	}
+	if user.Status != 1 {
+		return AuthTokens{}, nil, ErrUserDisabled
+	}
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
 		return AuthTokens{}, nil, ErrInvalidCredential
 	}
@@ -118,6 +122,9 @@ func (s *AuthService) LoginBySMS(ctx context.Context, phone, smsCode string) (Au
 	user, err := s.userRepo.FindByPhone(ctx, strings.TrimSpace(phone))
 	if err != nil {
 		return AuthTokens{}, nil, ErrInvalidCredential
+	}
+	if user.Status != 1 {
+		return AuthTokens{}, nil, ErrUserDisabled
 	}
 
 	tokens, err := s.issueTokens(int64(user.ID), user.Role)

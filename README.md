@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.3.0 Release (2026-04-14)
+
+后端完成 **P2-1 管理端业务 API**（用户/商品/订单/轮播与系统配置/可选退货与日志），详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：管理端用户列表与启停；商品列表、审核、上下架、推荐；订单列表/详情/CSV 导出、对账标记；轮播 CRUD、`system_configs` 读写；可选退货 `4→6→7` 与 `6→4` 及 `order_logs` 查询；`docs/api-design.md` **v1.1.8**；`docs/task-list.md` 中 **P2-1-1～P2-1-6** 已完成；双端 App 包版本对齐 **0.3.0**。
+
 ## v0.2.2 Release (2026-04-14)
 
 发货端 App 完成 **P1-5 页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
