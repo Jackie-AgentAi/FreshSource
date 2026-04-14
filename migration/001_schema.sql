@@ -146,8 +146,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
     selected   TINYINT NOT NULL DEFAULT 1 COMMENT '是否选中: 0=否 1=是',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL,
     UNIQUE KEY uk_user_product_sku (user_id, product_id, sku_id),
-    KEY idx_user_shop (user_id, shop_id)
+    KEY idx_user_shop (user_id, shop_id),
+    KEY idx_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='购物车表';
 
 CREATE TABLE IF NOT EXISTS orders (

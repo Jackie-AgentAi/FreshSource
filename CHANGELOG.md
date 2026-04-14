@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-04-14
+
+### Added
+
+- **Buyer UI upgrade task doc**：新增 `docs/buyer-app-ui-upgrade-plan.md`，将订货端 UI 升级拆解为可执行任务（含分阶段实施、验收与风险）。
+- **Cart schema patch migration**：新增 `migration/003_cart_items_deleted_at.sql`，为存量库补齐 `cart_items.deleted_at` 与索引，兼容既有仓储软删查询。
+- **App test accounts and seller seed shop**：`migration/002_seed.sql` 增加订货端/发货端测试账号（`13800002222`、`13800003333`，密码 `abc12345`）及发货测试店铺（已审核、营业中）。
+
+### Changed
+
+- **Cart table base schema**：`migration/001_schema.sql` 中 `cart_items` 表新增 `deleted_at` 和 `idx_deleted_at`，避免新库初始化后购物车查询报 `system error`。
+- **Docker compose web entry**：`docker-compose.yml` 纳入 `admin-web` 服务（`8000` 端口），并通过 `ADMIN_API_PROXY_TARGET` 对接 compose 内 `api:8080`。
+- **Admin web proxy config**：`admin-web/.umirc.ts` 支持 `ADMIN_API_PROXY_TARGET` 环境变量，容器与本地双环境可切换。
+- **Package versions aligned to 0.3.3**：`buyer-app`、`seller-app`、`admin-web` 的 `package.json` 版本统一提升至 `0.3.3`。
+
+### Notes
+
+- 本版本聚焦联调可用性与发布维护：修复购物车系统错误、补齐测试账号数据、补充订货端 UI 升级执行文档。
+- 本地环境变量文件 `buyer-app/.env`、`seller-app/.env` 继续保持不入库。
+
 ## [0.3.2] - 2026-04-14
 
 ### Changed

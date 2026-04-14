@@ -44,6 +44,10 @@ ON DUPLICATE KEY UPDATE
 -- seed super admin:
 -- phone: 13800000000
 -- password: Admin@123456
+--
+-- seed app test users:
+-- buyer phone: 13800002222 password: abc12345
+-- seller phone: 13800003333 password: abc12345
 INSERT INTO users (phone, password_hash, nickname, role, status)
 VALUES (
     '13800000000',
@@ -59,6 +63,17 @@ ON DUPLICATE KEY UPDATE
     status = VALUES(status),
     deleted_at = NULL;
 
+INSERT INTO users (phone, password_hash, nickname, role, status)
+VALUES
+    ('13800002222', '$2a$10$SGfrHvAXBz1JNkPAQCKs1ePlG.eLYVuX6MWqkt/bmj3FRlt4VHw7q', '订货测试账号', 1, 1),
+    ('13800003333', '$2a$10$SGfrHvAXBz1JNkPAQCKs1ePlG.eLYVuX6MWqkt/bmj3FRlt4VHw7q', '发货测试账号', 2, 1)
+ON DUPLICATE KEY UPDATE
+    password_hash = VALUES(password_hash),
+    nickname = VALUES(nickname),
+    role = VALUES(role),
+    status = VALUES(status),
+    deleted_at = NULL;
+
 INSERT INTO admins (user_id, real_name, role_level, permissions)
 SELECT id, '系统超管', 2, JSON_ARRAY('*')
 FROM users
@@ -67,3 +82,47 @@ ON DUPLICATE KEY UPDATE
     real_name = '系统超管',
     role_level = 2,
     permissions = JSON_ARRAY('*');
+
+INSERT INTO shops (
+    user_id,
+    shop_name,
+    logo,
+    description,
+    contact_phone,
+    province,
+    city,
+    district,
+    address,
+    business_license,
+    audit_status,
+    audit_remark,
+    status
+)
+SELECT
+    u.id,
+    '测试发货店铺',
+    '',
+    '用于发货端联调的测试店铺',
+    '13800003333',
+    '测试省',
+    '测试市',
+    '测试区',
+    '测试路 100 号',
+    '',
+    1,
+    'seed auto approved',
+    1
+FROM users u
+WHERE u.phone = '13800003333'
+ON DUPLICATE KEY UPDATE
+    shop_name = VALUES(shop_name),
+    description = VALUES(description),
+    contact_phone = VALUES(contact_phone),
+    province = VALUES(province),
+    city = VALUES(city),
+    district = VALUES(district),
+    address = VALUES(address),
+    audit_status = VALUES(audit_status),
+    audit_remark = VALUES(audit_remark),
+    status = VALUES(status),
+    deleted_at = NULL;

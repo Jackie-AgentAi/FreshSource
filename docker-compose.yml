@@ -4,6 +4,7 @@ services:
     container_name: freshmart-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
       MYSQL_DATABASE: freshmart
       MYSQL_USER: freshmart
       MYSQL_PASSWORD: freshmart
@@ -56,6 +57,22 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
+    restart: unless-stopped
+
+  admin-web:
+    image: node:20-alpine
+    container_name: freshmart-admin-web
+    working_dir: /app
+    environment:
+      ADMIN_API_PROXY_TARGET: http://api:8080
+    depends_on:
+      - api
+    volumes:
+      - ./admin-web:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
     restart: unless-stopped
 
   nginx:

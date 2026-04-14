@@ -19,12 +19,13 @@ export default defineConfig({
         { path: '/orders', component: '@/pages/Orders' },
         { path: '/banners', component: '@/pages/Banners' },
         { path: '/configs', component: '@/pages/Configs' },
+        { path: '/notifications', component: '@/pages/Notifications' },
       ],
     },
   ],
   proxy: {
     '/api': {
-      target: 'http://localhost:8080',
+      target: process.env.ADMIN_API_PROXY_TARGET || 'http://localhost:8080',
       changeOrigin: true,
     },
   },

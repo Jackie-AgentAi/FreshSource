@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.3.3 Release (2026-04-14)
+
+版本发布更新：修复订货端购物车 `system error`、补齐双端测试账号种子、并补充订货端 UI 升级任务文档，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：新增 `migration/003_cart_items_deleted_at.sql` 修复 `cart_items` 软删字段缺失问题；`migration/002_seed.sql` 增加订货/发货测试账号及卖家测试店铺；`docker-compose.yml` 纳入 `admin-web` 启动；新增 `docs/buyer-app-ui-upgrade-plan.md` 用于订货端 UI 升级执行。
+
 ## v0.3.2 Release (2026-04-14)
 
 版本维护更新：三端应用版本统一至 **0.3.2**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
