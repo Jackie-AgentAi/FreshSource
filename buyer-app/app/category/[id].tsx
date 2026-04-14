@@ -1,18 +1,19 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { fetchBuyerProducts } from '@/api/catalog';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { ProductCard } from '@/components/ProductCard';
 import type { BuyerProductItem } from '@/types/catalog';
-import { colors, spacing } from '@/theme/tokens';
+import { colors, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CategoryProductsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
   const navigation = useNavigation();
   const categoryId = Number(id);
@@ -26,7 +27,7 @@ export default function CategoryProductsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: '分类商品' });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   const loadPage = useCallback(
@@ -111,6 +112,15 @@ export default function CategoryProductsScreen() {
 
   return (
     <PageContainer>
+      <AppHeader
+        title={name ? `${name}` : '分类商品'}
+        subtitle="按分类浏览并快速加购"
+        right={
+          <Pressable style={styles.headerAction} onPress={() => router.push('/(tabs)/categories')}>
+            <Text style={styles.headerActionText}>换分类</Text>
+          </Pressable>
+        }
+      />
       <FlatList
         data={list}
         keyExtractor={(item) => String(item.id)}
@@ -129,7 +139,11 @@ export default function CategoryProductsScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.cardCell}>
-            <ProductCard item={item} onPress={() => router.push(`/product/${item.id}`)} />
+            <ProductCard
+              item={item}
+              onPress={() => router.push(`/product/${item.id}`)}
+              onAddToCart={() => router.push('/(tabs)/cart')}
+            />
           </View>
         )}
         contentContainerStyle={styles.listContent}
@@ -142,6 +156,18 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
+  },
+  headerAction: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  headerActionText: {
+    color: colors.primary,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
   },
   columnWrap: {
     justifyContent: 'space-between',

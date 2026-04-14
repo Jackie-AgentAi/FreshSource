@@ -19,13 +19,14 @@ import {
   selectAllCartItems,
   updateCartItemQuantity,
 } from '@/api/cart';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { useCheckoutDraftStore } from '@/store/checkoutDraft';
 import type { CartItemView, CartShopGroup } from '@/types/cart';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { resolveMediaUrl } from '@/utils/media';
 
 function collectValidItemIds(groups: CartShopGroup[]): number[] {
@@ -95,6 +96,18 @@ export default function CartTabPage() {
 
   const validIds = useMemo(() => collectValidItemIds(groups), [groups]);
   const allSelected = validIds.length > 0 && validIds.every((id) => selectedIds.has(id));
+  const selectedItems = useMemo(
+    () =>
+      groups
+        .flatMap((g) => g.items)
+        .filter((it) => !it.is_invalid && selectedIds.has(it.id)),
+    [groups, selectedIds],
+  );
+  const selectedCount = selectedItems.length;
+  const selectedAmount = useMemo(
+    () => selectedItems.reduce((sum, it) => sum + Number(it.product?.price ?? 0) * Number(it.quantity ?? 0), 0),
+    [selectedItems],
+  );
 
   const toggleSelect = (item: CartItemView) => {
     if (item.is_invalid) {
@@ -137,6 +150,18 @@ export default function CartTabPage() {
     }
     try {
       await updateCartItemQuantity(item.id, q);
+      await load();
+    } catch (e) {
+      Alert.alert('提示', e instanceof Error ? e.message : '修改失败');
+    }
+  };
+
+  const adjustQuantity = async (item: CartItemView, delta: number) => {
+    const current = Number(qtyDraft[item.id] ?? item.quantity);
+    const next = Math.max(1, Number((current + delta).toFixed(2)));
+    setQtyDraft((prev) => ({ ...prev, [item.id]: String(next) }));
+    try {
+      await updateCartItemQuantity(item.id, next);
       await load();
     } catch (e) {
       Alert.alert('提示', e instanceof Error ? e.message : '修改失败');
@@ -204,14 +229,15 @@ export default function CartTabPage() {
 
   return (
     <PageContainer>
+      <AppHeader title="购物车" subtitle="按店铺分组管理，支持批量结算" />
       <View style={styles.toolbar}>
-        <Pressable onPress={() => void syncSelectAllServer(1)}>
+        <Pressable style={styles.toolbarAction} onPress={() => void syncSelectAllServer(1)}>
           <Text style={styles.link}>全选(同步)</Text>
         </Pressable>
-        <Pressable onPress={() => void syncSelectAllServer(0)}>
+        <Pressable style={styles.toolbarAction} onPress={() => void syncSelectAllServer(0)}>
           <Text style={styles.link}>取消全选(同步)</Text>
         </Pressable>
-        <Pressable onPress={onClearInvalid}>
+        <Pressable style={styles.toolbarAction} onPress={onClearInvalid}>
           <Text style={styles.link}>清空失效</Text>
         </Pressable>
       </View>
@@ -219,11 +245,21 @@ export default function CartTabPage() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => String(item.id)}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-          </View>
-        )}
+        renderSectionHeader={({ section: { title, data } }) => {
+          const validCount = data.filter((it) => !it.is_invalid).length;
+          const invalidCount = data.length - validCount;
+          return (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle} numberOfLines={1}>
+                {title}
+              </Text>
+              <View style={styles.sectionMetaWrap}>
+                <Text style={styles.sectionMeta}>有效 {validCount}</Text>
+                {invalidCount > 0 ? <Text style={styles.sectionMetaDanger}>失效 {invalidCount}</Text> : null}
+              </View>
+            </View>
+          );
+        }}
         renderItem={({ item }) => {
           const uri = resolveMediaUrl(item.product?.cover_image);
           const checked = selectedIds.has(item.id);
@@ -243,16 +279,37 @@ export default function CartTabPage() {
                 <Text style={styles.name} numberOfLines={2}>
                   {item.product?.name || '商品'}
                 </Text>
-                <Text style={styles.price}>¥{Number(item.product?.price ?? 0).toFixed(2)}</Text>
-                {item.is_invalid ? <Text style={styles.invalidTag}>失效</Text> : null}
+                <View style={styles.priceRow}>
+                  <Text style={styles.price}>¥{Number(item.product?.price ?? 0).toFixed(2)}</Text>
+                  <Text style={styles.unit}>{item.product?.unit ? `/${item.product.unit}` : ''}</Text>
+                </View>
+                <View style={styles.tagsRow}>
+                  {item.is_invalid ? <Text style={styles.invalidTag}>失效商品</Text> : null}
+                  {!item.is_invalid ? <Text style={styles.validTag}>可结算</Text> : null}
+                </View>
                 <View style={styles.qtyRow}>
+                  <Pressable
+                    style={[styles.qtyBtn, item.is_invalid && styles.qtyBtnDisabled]}
+                    disabled={item.is_invalid}
+                    onPress={() => void adjustQuantity(item, -1)}
+                  >
+                    <Text style={styles.qtyBtnText}>-</Text>
+                  </Pressable>
                   <TextInput
                     style={styles.qtyInput}
                     keyboardType="decimal-pad"
                     value={qtyDraft[item.id] ?? String(item.quantity)}
                     onChangeText={(t) => setQtyDraft((m) => ({ ...m, [item.id]: t }))}
                     onEndEditing={() => void applyQuantity(item)}
+                    editable={!item.is_invalid}
                   />
+                  <Pressable
+                    style={[styles.qtyBtn, item.is_invalid && styles.qtyBtnDisabled]}
+                    disabled={item.is_invalid}
+                    onPress={() => void adjustQuantity(item, 1)}
+                  >
+                    <Text style={styles.qtyBtnText}>+</Text>
+                  </Pressable>
                   <Pressable onPress={() => removeItem(item)} style={styles.delBtn}>
                     <Text style={styles.delText}>删除</Text>
                   </Pressable>
@@ -272,6 +329,10 @@ export default function CartTabPage() {
               <View style={[styles.checkBox, allSelected && styles.checkBoxOn]} />
               <Text style={styles.footerCheckText}>全选</Text>
             </Pressable>
+            <View style={styles.totalWrap}>
+              <Text style={styles.totalLabel}>已选 {selectedCount} 件</Text>
+              <Text style={styles.totalAmount}>¥{selectedAmount.toFixed(2)}</Text>
+            </View>
             <Pressable style={styles.checkoutBtn} onPress={goCheckout}>
               <Text style={styles.checkoutText}>去结算</Text>
             </Pressable>
@@ -293,35 +354,65 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+  toolbarAction: {
+    paddingVertical: spacing.xs,
+  },
   link: {
     color: colors.primary,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
   listContent: {
     paddingTop: spacing.sm,
   },
   sectionHeader: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     backgroundColor: colors.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sectionTitle: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '700',
+    color: colors.textStrong,
+    flex: 1,
+  },
+  sectionMetaWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionMeta: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
+  },
+  sectionMetaDanger: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.statusDangerText,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: spacing.lg,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    ...elevation.sm,
   },
   rowInvalid: {
-    opacity: 0.55,
+    backgroundColor: colors.surfaceDisabled,
+    borderColor: colors.borderStrong,
   },
   check: {
     paddingTop: spacing.lg,
@@ -354,43 +445,98 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textStrong,
+  },
+  priceRow: {
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   price: {
-    marginTop: spacing.xs,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.primary,
     fontWeight: '700',
   },
-  invalidTag: {
-    marginTop: spacing.xs,
+  unit: {
+    marginLeft: spacing.xxs,
     fontSize: typography.small,
-    color: colors.danger,
+    lineHeight: lineHeight.small,
+    color: colors.textMuted,
+  },
+  tagsRow: {
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  invalidTag: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.statusDangerText,
+    fontWeight: '700',
+    backgroundColor: colors.statusDangerBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  validTag: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.statusSuccessText,
     fontWeight: '600',
+    backgroundColor: colors.statusSuccessBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
   },
   qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: spacing.sm,
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  qtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyBtnDisabled: {
+    opacity: 0.5,
+  },
+  qtyBtnText: {
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textStrong,
+    fontWeight: '700',
   },
   qtyInput: {
-    minWidth: 72,
+    minWidth: 64,
+    textAlign: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    backgroundColor: colors.surface,
   },
   delBtn: {
-    paddingHorizontal: spacing.sm,
+    marginLeft: 'auto',
+    paddingHorizontal: spacing.xs,
     paddingVertical: 4,
   },
   delText: {
-    color: colors.danger,
+    color: colors.statusDangerText,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
   },
   footer: {
     position: 'absolute',
@@ -415,7 +561,24 @@ const styles = StyleSheet.create({
   },
   footerCheckText: {
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
+  },
+  totalWrap: {
+    flex: 1,
+    marginHorizontal: spacing.md,
+    alignItems: 'flex-end',
+  },
+  totalLabel: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
+  },
+  totalAmount: {
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    color: colors.primary,
+    fontWeight: '700',
   },
   checkoutBtn: {
     backgroundColor: colors.primary,

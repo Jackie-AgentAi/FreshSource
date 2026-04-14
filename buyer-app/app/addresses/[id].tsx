@@ -1,14 +1,17 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { deleteAddress, fetchAddresses, updateAddress } from '@/api/address';
+import { AppHeader } from '@/components/AppHeader';
 import { AddressForm, type AddressFormValues } from '@/components/AddressForm';
 import { PageContainer } from '@/components/PageContainer';
 import type { UserAddress } from '@/types/address';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 export default function AddressEditScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [initial, setInitial] = useState<UserAddress | null | undefined>(undefined);
@@ -49,15 +52,9 @@ export default function AddressEditScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: '编辑地址',
-      headerRight: () =>
-        initial ? (
-          <Pressable onPress={onDelete} hitSlop={12} style={{ marginRight: spacing.md }}>
-            <Text style={styles.delHeader}>删除</Text>
-          </Pressable>
-        ) : null,
+      headerShown: false,
     });
-  }, [navigation, initial, onDelete]);
+  }, [navigation]);
 
   const onSubmit = (values: AddressFormValues) => {
     if (!initial) {
@@ -79,6 +76,7 @@ export default function AddressEditScreen() {
   if (initial === undefined) {
     return (
       <PageContainer>
+        <AppHeader title="编辑地址" subtitle="加载地址信息中" />
         <Text style={styles.hint}>加载中…</Text>
       </PageContainer>
     );
@@ -87,6 +85,7 @@ export default function AddressEditScreen() {
   if (initial === null) {
     return (
       <PageContainer>
+        <AppHeader title="编辑地址" subtitle="未找到当前地址" />
         <Text style={styles.hint}>地址不存在</Text>
       </PageContainer>
     );
@@ -94,7 +93,19 @@ export default function AddressEditScreen() {
 
   return (
     <PageContainer>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <AppHeader
+        title="编辑地址"
+        subtitle="更新联系人与配送信息"
+        right={
+          <Pressable onPress={onDelete} hitSlop={12} style={styles.delHeaderBtn}>
+            <Text style={styles.delHeader}>删除</Text>
+          </Pressable>
+        }
+      />
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 48 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <AddressForm
           key={initial.id}
           initial={initial}
@@ -109,16 +120,24 @@ export default function AddressEditScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingBottom: 48,
+    paddingTop: spacing.sm,
   },
   hint: {
     padding: spacing.lg,
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     color: colors.textSecondary,
   },
+  delHeaderBtn: {
+    backgroundColor: colors.statusDangerBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
   delHeader: {
-    color: colors.danger,
-    fontSize: typography.body,
-    fontWeight: '600',
+    color: colors.statusDangerText,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
   },
 });

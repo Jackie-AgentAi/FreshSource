@@ -11,21 +11,14 @@ import {
 } from 'react-native';
 
 import { fetchBuyerOrders } from '@/api/buyerOrder';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
-import { orderStatusLabel } from '@/constants/order';
+import { BUYER_ORDER_FILTERS, getOrderStatusTag } from '@/constants/order';
 import type { BuyerOrderListItem } from '@/types/order';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
-
-const STATUS_FILTERS = [
-  { key: 'all', label: '全部', value: undefined as number | undefined },
-  { key: '0', label: '待确认', value: 0 },
-  { key: '3', label: '已送达', value: 3 },
-  { key: '4', label: '已完成', value: 4 },
-  { key: '5', label: '已取消', value: 5 },
-];
+import { colors, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 export default function BuyerOrdersScreen() {
   const navigation = useNavigation();
@@ -76,7 +69,7 @@ export default function BuyerOrdersScreen() {
   }, [initialLoad]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: '我的订单' });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   const onRefresh = useCallback(async () => {
@@ -100,7 +93,7 @@ export default function BuyerOrdersScreen() {
     }
   }, [load, loading, loadingMore, page, totalPages]);
 
-  const filters = useMemo(() => STATUS_FILTERS, []);
+  const filters = useMemo(() => BUYER_ORDER_FILTERS, []);
 
   if (loading && list.length === 0) {
     return (
@@ -120,6 +113,7 @@ export default function BuyerOrdersScreen() {
 
   return (
     <PageContainer>
+      <AppHeader title="我的订单" subtitle="跟踪订单状态与履约进度" />
       <View style={styles.filterWrap}>
         {filters.map((f) => {
           const active = f.value === status || (f.value === undefined && status === undefined);
@@ -153,7 +147,19 @@ export default function BuyerOrdersScreen() {
           <Pressable style={styles.card} onPress={() => router.push(`/orders/${item.id}`)}>
             <View style={styles.cardTop}>
               <Text style={styles.shopName}>{item.shop_name || `店铺#${item.shop_id}`}</Text>
-              <Text style={styles.status}>{orderStatusLabel(item.status)}</Text>
+              <View
+                style={[
+                  styles.statusTag,
+                  {
+                    backgroundColor: getOrderStatusTag(item.status).bgColor,
+                    borderColor: getOrderStatusTag(item.status).borderColor,
+                  },
+                ]}
+              >
+                <Text style={[styles.status, { color: getOrderStatusTag(item.status).textColor }]}>
+                  {getOrderStatusTag(item.status).label}
+                </Text>
+              </View>
             </View>
             <Text style={styles.orderNo}>单号：{item.order_no}</Text>
             <Text style={styles.meta}>商品数：{item.item_count}</Text>
@@ -192,6 +198,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
   },
   filterTextActive: {
@@ -218,29 +225,38 @@ const styles = StyleSheet.create({
   },
   shopName: {
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     fontWeight: '700',
     flex: 1,
   },
+  statusTag: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
   status: {
-    fontSize: typography.caption,
-    color: colors.primary,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
     fontWeight: '700',
-    marginLeft: spacing.sm,
   },
   orderNo: {
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textMuted,
     marginBottom: spacing.xs,
   },
   meta: {
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
     marginBottom: 2,
   },
   pay: {
     marginTop: spacing.sm,
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     color: colors.primary,
     fontWeight: '700',
   },

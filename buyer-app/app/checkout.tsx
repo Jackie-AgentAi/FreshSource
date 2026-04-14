@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -9,9 +9,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchAddresses } from '@/api/address';
 import { createBuyerOrders, confirmBuyerOrder } from '@/api/buyerOrder';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
@@ -20,10 +22,11 @@ import { DEFAULT_DELIVERY_TYPE } from '@/constants/checkout';
 import { useCheckoutDraftStore } from '@/store/checkoutDraft';
 import type { OrderConfirmResult } from '@/types/order';
 import type { UserAddress } from '@/types/address';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { formatAddressLine } from '@/utils/address';
 
 export default function CheckoutScreen() {
+  const insets = useSafeAreaInsets();
   const cartItemIds = useCheckoutDraftStore((s) => s.cartItemIds);
   const addressId = useCheckoutDraftStore((s) => s.addressId);
   const setAddressId = useCheckoutDraftStore((s) => s.setAddressId);
@@ -39,6 +42,7 @@ export default function CheckoutScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const selectedAddress = addresses.find((a) => a.id === addressId) || null;
+  const totalPayAmount = useMemo(() => Number(preview?.total_pay_amount ?? 0), [preview]);
 
   const loadAddresses = useCallback(async () => {
     try {
@@ -143,7 +147,8 @@ export default function CheckoutScreen() {
 
   return (
     <PageContainer>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <AppHeader title="确认订单" subtitle="确认地址、商品与费用后提交" />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 140 + insets.bottom }]}>
         <Text style={styles.sectionLabel}>收货地址</Text>
         <Pressable
           style={styles.addrCard}
@@ -165,7 +170,7 @@ export default function CheckoutScreen() {
           <Text style={styles.addrChevron}>›</Text>
         </Pressable>
 
-        <Text style={styles.sectionLabel}>备注（可选）</Text>
+        <Text style={styles.sectionLabel}>买家备注</Text>
         <TextInput
           style={styles.remark}
           placeholder="给卖家留言"
@@ -181,10 +186,16 @@ export default function CheckoutScreen() {
           <ErrorRetryView message={previewError} onRetry={() => void runConfirm()} />
         ) : preview ? (
           <>
-            <Text style={styles.sectionLabel}>拆单预览</Text>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryTitle}>商品与费用清单</Text>
+              <Text style={styles.summaryMeta}>共 {preview.groups.length} 个店铺订单</Text>
+            </View>
             {preview.groups.map((g) => (
               <View key={g.shop_id} style={styles.groupCard}>
-                <Text style={styles.shopName}>{g.shop_name}</Text>
+                <View style={styles.shopHead}>
+                  <Text style={styles.shopName}>{g.shop_name}</Text>
+                  <Text style={styles.shopMeta}>{g.items.length} 件</Text>
+                </View>
                 {g.items.map((line) => (
                   <View key={`${g.shop_id}-${line.product_id}`} style={styles.lineRow}>
                     <Text style={styles.lineName} numberOfLines={2}>
@@ -195,26 +206,30 @@ export default function CheckoutScreen() {
                     </Text>
                   </View>
                 ))}
-                <Text style={styles.groupSum}>商品小计 ¥{g.total_amount}</Text>
-                <Text style={styles.groupSum}>运费 ¥{g.freight_amount}</Text>
-                <Text style={styles.groupPay}>应付 ¥{g.pay_amount}</Text>
+                <View style={styles.groupAmountBox}>
+                  <Text style={styles.groupSum}>商品小计 ¥{g.total_amount}</Text>
+                  <Text style={styles.groupSum}>运费 ¥{g.freight_amount}</Text>
+                  <Text style={styles.groupPay}>应付 ¥{g.pay_amount}</Text>
+                </View>
               </View>
             ))}
-            <View style={styles.totalBar}>
-              <Text style={styles.totalLabel}>合计应付</Text>
-              <Text style={styles.totalValue}>¥{preview.total_pay_amount}</Text>
-            </View>
           </>
         ) : null}
+      </ScrollView>
 
+      <View style={[styles.submitBar, { paddingBottom: spacing.md + insets.bottom }]}>
+        <View style={styles.totalWrap}>
+          <Text style={styles.totalLabel}>合计应付</Text>
+          <Text style={styles.totalValue}>¥{totalPayAmount.toFixed(2)}</Text>
+        </View>
         <Pressable
-          style={[styles.submitBtn, submitting && styles.submitDisabled]}
+          style={[styles.submitBtn, (submitting || !preview) && styles.submitDisabled]}
           disabled={submitting || !preview}
           onPress={submit}
         >
           <Text style={styles.submitText}>{submitting ? '提交中…' : '提交订单'}</Text>
         </Pressable>
-      </ScrollView>
+      </View>
     </PageContainer>
   );
 }
@@ -226,6 +241,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.md,
@@ -238,22 +254,26 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: spacing.lg,
+    ...elevation.sm,
   },
   addrTextCol: {
     flex: 1,
   },
   addrName: {
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textStrong,
   },
   addrDetail: {
     marginTop: spacing.xs,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
   },
   addrPlaceholder: {
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     color: colors.textMuted,
   },
   addrChevron: {
@@ -269,8 +289,26 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     textAlignVertical: 'top',
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     backgroundColor: colors.surface,
+    ...elevation.sm,
+  },
+  summaryHeader: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  summaryTitle: {
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    color: colors.textStrong,
+    fontWeight: '700',
+  },
+  summaryMeta: {
+    marginTop: spacing.xxs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
   },
   groupCard: {
     backgroundColor: colors.surface,
@@ -279,12 +317,26 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    ...elevation.sm,
+  },
+  shopHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
   },
   shopName: {
-    fontSize: typography.title,
+    fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
-    marginBottom: spacing.sm,
-    color: colors.text,
+    color: colors.textStrong,
+    flex: 1,
+  },
+  shopMeta: {
+    marginLeft: spacing.sm,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
   },
   lineRow: {
     flexDirection: 'row',
@@ -295,46 +347,66 @@ const styles = StyleSheet.create({
   lineName: {
     flex: 1,
     fontSize: typography.caption,
-    color: colors.text,
+    lineHeight: lineHeight.caption,
+    color: colors.textStrong,
   },
   lineMeta: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
   },
+  groupAmountBox: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    gap: spacing.xxs,
+  },
   groupSum: {
-    marginTop: spacing.xs,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
   },
   groupPay: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
     color: colors.primary,
   },
-  totalBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
+  submitBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  totalWrap: {
+    flex: 1,
   },
   totalLabel: {
-    fontSize: typography.title,
-    fontWeight: '700',
-    color: colors.text,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
   },
   totalValue: {
-    fontSize: 22,
+    fontSize: typography.h4,
+    lineHeight: lineHeight.h4,
     fontWeight: '800',
     color: colors.primary,
   },
   submitBtn: {
-    marginTop: spacing.xl,
     backgroundColor: colors.primary,
+    minWidth: 132,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
     alignItems: 'center',
   },
@@ -344,7 +416,8 @@ const styles = StyleSheet.create({
   submitText: {
     color: colors.surface,
     fontWeight: '700',
-    fontSize: typography.body,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
   },
   backBtn: {
     marginTop: spacing.lg,

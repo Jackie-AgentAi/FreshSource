@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { loginByPassword } from '@/api/auth';
 import { BUSINESS_SUCCESS_CODE } from '@/constants/api';
 import { useAuthStore } from '@/store/auth';
+import { colors, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 type LoginForm = {
   phone: string;
@@ -49,47 +50,58 @@ export default function LoginPage() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>FreshMart 订货端登录</Text>
+      <View style={styles.hero}>
+        <Text style={styles.brand}>FreshMart</Text>
+        <Text style={styles.title}>订货端登录</Text>
+        <Text style={styles.subTitle}>快速进入采购工作台与下单流程</Text>
+      </View>
 
-      <Text style={styles.label}>手机号</Text>
-      <Controller
-        control={control}
-        name="phone"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            keyboardType="number-pad"
-            value={value}
-            onChangeText={onChange}
-            placeholder="请输入手机号"
-          />
-        )}
-      />
+      <View style={styles.card}>
+        <Text style={styles.label}>手机号</Text>
+        <Controller
+          control={control}
+          name="phone"
+          rules={{ required: true }}
+          render={({ field: { onChange, value } }) => (
+            <TextInput
+              style={styles.input}
+              keyboardType="number-pad"
+              value={value}
+              onChangeText={onChange}
+              placeholder="请输入手机号"
+              placeholderTextColor={colors.textMuted}
+            />
+          )}
+        />
 
-      <Text style={styles.label}>密码</Text>
-      <Controller
-        control={control}
-        name="password"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            value={value}
-            onChangeText={onChange}
-            placeholder="请输入密码"
-          />
-        )}
-      />
+        <Text style={styles.label}>密码</Text>
+        <Controller
+          control={control}
+          name="password"
+          rules={{ required: true }}
+          render={({ field: { onChange, value } }) => (
+            <TextInput
+              style={styles.input}
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              placeholder="请输入密码"
+              placeholderTextColor={colors.textMuted}
+            />
+          )}
+        />
 
-      {formState.errors.root?.message ? (
-        <Text style={styles.error}>{formState.errors.root.message}</Text>
-      ) : null}
+        {formState.errors.root?.message ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>登录失败</Text>
+            <Text style={styles.error}>{formState.errors.root.message}</Text>
+          </View>
+        ) : null}
 
-      <Pressable style={[styles.button, submitting ? styles.buttonDisabled : null]} onPress={onSubmit} disabled={submitting}>
-        <Text style={styles.buttonText}>{submitting ? '登录中...' : '登录'}</Text>
-      </Pressable>
+        <Pressable style={[styles.button, submitting ? styles.buttonDisabled : null]} onPress={onSubmit} disabled={submitting}>
+          <Text style={styles.buttonText}>{submitting ? '登录中...' : '登录'}</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -97,42 +109,89 @@ export default function LoginPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
+  },
+  hero: {
+    marginBottom: spacing.lg,
+  },
+  brand: {
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.primary,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 24,
+    fontSize: typography.h2,
+    lineHeight: lineHeight.h2,
     fontWeight: '700',
-    marginBottom: 24,
+    color: colors.textStrong,
+  },
+  subTitle: {
+    marginTop: spacing.xs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    padding: spacing.lg,
   },
   label: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#333',
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    marginBottom: spacing.xs,
+    color: colors.textSecondary,
   },
   input: {
     height: 44,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#d9d9d9',
-    paddingHorizontal: 12,
-    marginBottom: 16,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceSecondary,
+    color: colors.textStrong,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: typography.body,
+    lineHeight: lineHeight.body,
+  },
+  errorBox: {
+    backgroundColor: colors.statusDangerBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.statusDangerText,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  errorTitle: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.statusDangerText,
+    fontWeight: '700',
   },
   error: {
-    color: '#cf1322',
-    marginBottom: 12,
+    marginTop: spacing.xxs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.statusDangerText,
   },
   button: {
-    backgroundColor: '#1677ff',
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: colors.surface,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
   buttonDisabled: {

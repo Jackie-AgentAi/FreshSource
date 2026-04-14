@@ -3,13 +3,14 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { deleteAddress, fetchAddresses, setDefaultAddress } from '@/api/address';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { useCheckoutDraftStore } from '@/store/checkoutDraft';
 import type { UserAddress } from '@/types/address';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { formatAddressLine } from '@/utils/address';
 
 export default function AddressListScreen() {
@@ -42,15 +43,9 @@ export default function AddressListScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: pickMode ? '选择收货地址' : '收货地址',
-      headerRight: () =>
-        pickMode ? null : (
-          <Pressable onPress={() => router.push('/addresses/new')} hitSlop={12}>
-            <Text style={styles.headerBtn}>新增</Text>
-          </Pressable>
-        ),
+      headerShown: false,
     });
-  }, [navigation, pickMode]);
+  }, [navigation]);
 
   const onPick = (row: UserAddress) => {
     useCheckoutDraftStore.getState().setAddressId(row.id);
@@ -106,6 +101,17 @@ export default function AddressListScreen() {
 
   return (
     <PageContainer>
+      <AppHeader
+        title={pickMode ? '选择收货地址' : '收货地址'}
+        subtitle={pickMode ? '用于本次订单配送' : '管理常用收货地址'}
+        right={
+          pickMode ? null : (
+            <Pressable style={styles.headerAction} onPress={() => router.push('/addresses/new')} hitSlop={12}>
+              <Text style={styles.headerActionText}>新增</Text>
+            </Pressable>
+          )
+        }
+      />
       <FlatList
         data={list}
         keyExtractor={(item) => String(item.id)}
@@ -164,11 +170,17 @@ export default function AddressListScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerBtn: {
+  headerAction: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  headerActionText: {
     color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: '600',
-    marginRight: spacing.md,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
   },
   list: {
     padding: spacing.lg,
@@ -181,6 +193,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.md,
     overflow: 'hidden',
+    ...elevation.sm,
   },
   cardMain: {
     padding: spacing.lg,
@@ -192,12 +205,14 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textStrong,
     flex: 1,
   },
   defaultTag: {
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.primary,
     fontWeight: '700',
     borderWidth: 1,
@@ -210,12 +225,13 @@ const styles = StyleSheet.create({
   detail: {
     marginTop: spacing.sm,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
-    lineHeight: 20,
   },
   tag: {
     marginTop: spacing.xs,
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textMuted,
   },
   actions: {
@@ -230,6 +246,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.primary,
     fontWeight: '600',
   },
@@ -248,6 +265,7 @@ const styles = StyleSheet.create({
   addFooterText: {
     color: colors.primary,
     fontWeight: '700',
-    fontSize: typography.body,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
   },
 });

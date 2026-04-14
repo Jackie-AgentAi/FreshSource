@@ -1,17 +1,21 @@
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createAddress } from '@/api/address';
+import { AppHeader } from '@/components/AppHeader';
 import { AddressForm, type AddressFormValues } from '@/components/AddressForm';
 import { PageContainer } from '@/components/PageContainer';
+import { spacing } from '@/theme/tokens';
 
 export default function AddressNewScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [submitting, setSubmitting] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: '新增地址' });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   const onSubmit = (values: AddressFormValues) => {
@@ -35,7 +39,11 @@ export default function AddressNewScreen() {
 
   return (
     <PageContainer>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <AppHeader title="新增地址" subtitle="用于订单配送与默认收货" />
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 48 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <AddressForm submitLabel="保存" onSubmit={onSubmit} submitting={submitting} />
       </ScrollView>
     </PageContainer>
@@ -44,6 +52,6 @@ export default function AddressNewScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingBottom: 48,
+    paddingTop: spacing.sm,
   },
 });

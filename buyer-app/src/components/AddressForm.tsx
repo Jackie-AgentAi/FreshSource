@@ -2,7 +2,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import type { SaveAddressPayload, UserAddress } from '@/types/address';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 export type AddressFormValues = SaveAddressPayload;
 
@@ -131,26 +131,37 @@ export function AddressForm({ initial, submitting, submitLabel, onSubmit }: Prop
 const styles = StyleSheet.create({
   wrap: {
     padding: spacing.lg,
-    gap: spacing.sm,
+    gap: spacing.xs,
+  },
+  sectionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    ...elevation.sm,
   },
   label: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
     marginTop: spacing.sm,
+    marginBottom: spacing.xxs,
   },
   labelInline: {
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     flex: 1,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     backgroundColor: colors.surface,
   },
   multiline: {
@@ -162,13 +173,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.md,
     justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   submit: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: radius.md,
     alignItems: 'center',
+    minHeight: 44,
   },
   submitDisabled: {
     opacity: 0.6,
@@ -176,6 +194,7 @@ const styles = StyleSheet.create({
   submitText: {
     color: colors.surface,
     fontWeight: '700',
-    fontSize: typography.body,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
   },
 });

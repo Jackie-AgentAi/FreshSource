@@ -13,9 +13,9 @@ import {
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
-import { orderStatusLabel } from '@/constants/order';
+import { getOrderStatusTag } from '@/constants/order';
 import type { BuyerOrderDetail } from '@/types/order';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { showToast } from '@/utils/toast';
 import { resolveMediaUrl } from '@/utils/media';
 
@@ -52,7 +52,7 @@ export default function BuyerOrderDetailScreen() {
   }, [load]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: '订单详情' });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   const runAction = useCallback(
@@ -106,14 +106,21 @@ export default function BuyerOrderDetailScreen() {
   const canCancel = detail.status === 0;
   const canReceive = detail.status === 3;
   const canDelete = detail.status === 4 || detail.status === 5;
+  const canReview = detail.status === 4;
+  const statusTag = getOrderStatusTag(detail.status);
 
   return (
     <PageContainer>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>订单详情</Text>
+        <View style={[styles.headerStatusTag, { backgroundColor: statusTag.bgColor, borderColor: statusTag.borderColor }]}>
+          <Text style={[styles.headerStatusText, { color: statusTag.textColor }]}>{statusTag.label}</Text>
+        </View>
+      </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.card}>
           <Text style={styles.title}>订单信息</Text>
           <Text style={styles.value}>订单号：{detail.order_no}</Text>
-          <Text style={styles.value}>状态：{orderStatusLabel(detail.status)}</Text>
           <Text style={styles.value}>下单时间：{detail.created_at.replace('T', ' ').slice(0, 16)}</Text>
           <Text style={styles.value}>店铺：{detail.shop_name || `店铺#${detail.shop_id}`}</Text>
         </View>
@@ -165,76 +172,117 @@ export default function BuyerOrderDetailScreen() {
           </View>
         ) : null}
 
-        <View style={styles.actions}>
-          {canCancel ? (
-            <Pressable
-              style={[styles.actionBtn, styles.warnBtn, submitting && styles.disabledBtn]}
-              disabled={submitting}
-              onPress={() => {
-                Alert.alert('取消订单', '确认取消该订单？', [
-                  { text: '否', style: 'cancel' },
-                  {
-                    text: '确认',
-                    onPress: () => {
-                      void runAction(() => cancelBuyerOrder(detail.id), '已取消订单');
-                    },
+        <View style={styles.actionsPlaceholder} />
+      </ScrollView>
+      <View style={styles.actions}>
+        {canCancel ? (
+          <Pressable
+            style={[styles.actionBtn, styles.warnBtn, submitting && styles.disabledBtn]}
+            disabled={submitting}
+            onPress={() => {
+              Alert.alert('取消订单', '确认取消该订单？', [
+                { text: '否', style: 'cancel' },
+                {
+                  text: '确认',
+                  onPress: () => {
+                    void runAction(() => cancelBuyerOrder(detail.id), '已取消订单');
                   },
-                ]);
-              }}
-            >
-              <Text style={styles.actionText}>取消订单</Text>
-            </Pressable>
-          ) : null}
+                },
+              ]);
+            }}
+          >
+            <Text style={styles.actionText}>取消订单</Text>
+          </Pressable>
+        ) : null}
 
-          {canReceive ? (
-            <Pressable
-              style={[styles.actionBtn, submitting && styles.disabledBtn]}
-              disabled={submitting}
-              onPress={() => {
-                void runAction(() => receiveBuyerOrder(detail.id), '已确认收货');
-              }}
-            >
-              <Text style={styles.actionText}>确认收货</Text>
-            </Pressable>
-          ) : null}
+        {canReceive ? (
+          <Pressable
+            style={[styles.actionBtn, submitting && styles.disabledBtn]}
+            disabled={submitting}
+            onPress={() => {
+              void runAction(() => receiveBuyerOrder(detail.id), '已确认收货');
+            }}
+          >
+            <Text style={styles.actionText}>确认收货</Text>
+          </Pressable>
+        ) : null}
 
+        <Pressable
+          style={[styles.actionBtn, styles.secondaryBtn, submitting && styles.disabledBtn]}
+          disabled={submitting}
+          onPress={() => {
+            void runAction(() => reorderBuyerOrder(detail.id), '已重新加入购物车');
+          }}
+        >
+          <Text style={[styles.actionText, styles.secondaryText]}>再来一单</Text>
+        </Pressable>
+
+        {canDelete ? (
           <Pressable
             style={[styles.actionBtn, styles.secondaryBtn, submitting && styles.disabledBtn]}
             disabled={submitting}
             onPress={() => {
-              void runAction(() => reorderBuyerOrder(detail.id), '已重新加入购物车');
+              Alert.alert('删除订单', '仅从列表隐藏，确认继续？', [
+                { text: '取消', style: 'cancel' },
+                {
+                  text: '删除',
+                  style: 'destructive',
+                  onPress: () => {
+                    void runAction(() => deleteBuyerOrder(detail.id), '已删除', false);
+                  },
+                },
+              ]);
             }}
           >
-            <Text style={[styles.actionText, styles.secondaryText]}>再来一单</Text>
+            <Text style={[styles.actionText, styles.secondaryText]}>删除订单</Text>
           </Pressable>
+        ) : null}
 
-          {canDelete ? (
-            <Pressable
-              style={[styles.actionBtn, styles.secondaryBtn, submitting && styles.disabledBtn]}
-              disabled={submitting}
-              onPress={() => {
-                Alert.alert('删除订单', '仅从列表隐藏，确认继续？', [
-                  { text: '取消', style: 'cancel' },
-                  {
-                    text: '删除',
-                    style: 'destructive',
-                    onPress: () => {
-                      void runAction(() => deleteBuyerOrder(detail.id), '已删除', false);
-                    },
-                  },
-                ]);
-              }}
-            >
-              <Text style={[styles.actionText, styles.secondaryText]}>删除订单</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </ScrollView>
+        {canReview ? (
+          <Pressable
+            style={[styles.actionBtn, submitting && styles.disabledBtn]}
+            disabled={submitting}
+            onPress={() => {
+              router.push(`/orders/review/${detail.id}`);
+            }}
+          >
+            <Text style={styles.actionText}>去评价</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontSize: typography.title,
+    lineHeight: lineHeight.title,
+    fontWeight: '700',
+    color: colors.textStrong,
+  },
+  headerStatusTag: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
+  headerStatusText: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
+  },
   scroll: {
     padding: spacing.lg,
     paddingBottom: spacing.xl * 2,
@@ -249,12 +297,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textStrong,
     marginBottom: spacing.sm,
   },
   value: {
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
@@ -278,22 +328,26 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: typography.caption,
-    color: colors.text,
+    lineHeight: lineHeight.caption,
+    color: colors.textStrong,
     fontWeight: '600',
   },
   itemMeta: {
     marginTop: 2,
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
   },
   itemSubtotal: {
     fontSize: typography.caption,
-    color: colors.text,
+    lineHeight: lineHeight.caption,
+    color: colors.textStrong,
     fontWeight: '700',
   },
   sum: {
     textAlign: 'right',
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -301,11 +355,25 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: spacing.sm,
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     color: colors.primary,
     fontWeight: '700',
   },
+  actionsPlaceholder: {
+    height: 12,
+  },
   actions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   actionBtn: {
     borderRadius: radius.md,
@@ -324,10 +392,11 @@ const styles = StyleSheet.create({
   actionText: {
     color: colors.surface,
     fontSize: typography.body,
+    lineHeight: lineHeight.body,
     fontWeight: '700',
   },
   secondaryText: {
-    color: colors.text,
+    color: colors.textStrong,
   },
   disabledBtn: {
     opacity: 0.55,

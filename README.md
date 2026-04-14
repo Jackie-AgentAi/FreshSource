@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.4.0 Release (2026-04-14)
+
+版本发布更新：完成订货端 App UI 升级第一阶段与核心交易链路视觉重构，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：`buyer-app` 完成 token 体系升级、通用头部与容器统一、列表空载错状态统一、商品卡片重构、首页/分类/购物车/确认订单/商品详情/订单链路/地址与个人中心/搜索与店铺页改版；订单状态标签与筛选项统一收敛到 `constants/order.ts`，降低重复硬编码与维护成本。
+
 ## v0.3.3 Release (2026-04-14)
 
 版本发布更新：修复订货端购物车 `system error`、补齐双端测试账号种子、并补充订货端 UI 升级任务文档，详见 [`CHANGELOG.md`](CHANGELOG.md)。

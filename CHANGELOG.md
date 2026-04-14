@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-04-14
+
+### Added
+
+- **Buyer App UI system upgrade (phase 1)**：新增统一 `AppHeader`，升级 `PageContainer` 支持头部与滚动容器组合，建立 token 2.0（颜色、字号、圆角、间距、阴影、层级）以支撑整端视觉一致性。
+- **Unified state views**：`LoadingView`、`EmptyState`、`ErrorRetryView` 升级为统一卡片体系，并补充可复用的空态操作能力。
+
+### Changed
+
+- **Product card redesign**：`ProductCard` 重构为价格/单位/库存/步长/起购/加购一体卡片，搜索与店铺列表统一复用该组件。
+- **Core buyer flow pages restyled**：首页、分类（含左右分栏）、购物车、确认订单、商品详情、订单列表与详情、地址管理、个人中心、搜索页、店铺页统一视觉与交互层级。
+- **Order status single source of truth**：订单状态筛选与标签样式统一下沉至 `buyer-app/src/constants/order.ts`，列表与详情页共用，减少页面硬编码。
+- **Package versions aligned to 0.4.0**：`buyer-app`、`seller-app`、`admin-web` 的 `package.json` 版本统一提升至 `0.4.0`。
+
+### Notes
+
+- 本版本聚焦订货端 UI 升级与可维护性收敛，不引入新的后端业务接口。
+- 本地环境变量文件 `buyer-app/.env`、`seller-app/.env` 继续保持不入库。
+
 ## [0.3.3] - 2026-04-14
 
 ### Added

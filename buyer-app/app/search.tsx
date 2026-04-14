@@ -1,7 +1,6 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useNavigation, useRouter } from 'expo-router';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -11,20 +10,27 @@ import {
 } from 'react-native';
 
 import { searchBuyerProducts } from '@/api/catalog';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
+import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { ProductCard } from '@/components/ProductCard';
 import type { BuyerProductItem } from '@/types/catalog';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 export default function SearchScreen() {
+  const navigation = useNavigation();
   const router = useRouter();
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [list, setList] = useState<BuyerProductItem[]>([]);
   const [searched, setSearched] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const runSearch = useCallback(async () => {
     const q = keyword.trim();
@@ -48,6 +54,7 @@ export default function SearchScreen() {
 
   return (
     <PageContainer>
+      <AppHeader title="搜索商品" subtitle="按关键词快速查找商品" />
       <View style={styles.toolbar}>
         <TextInput
           style={styles.input}
@@ -64,9 +71,7 @@ export default function SearchScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingView message="搜索中…" />
       ) : error ? (
         <ErrorRetryView message={error} onRetry={() => void runSearch()} />
       ) : !searched ? (
@@ -81,7 +86,11 @@ export default function SearchScreen() {
           columnWrapperStyle={styles.columnWrap}
           renderItem={({ item }) => (
             <View style={styles.cardCell}>
-              <ProductCard item={item} onPress={() => router.push(`/product/${item.id}`)} />
+              <ProductCard
+                item={item}
+                onPress={() => router.push(`/product/${item.id}`)}
+                onAddToCart={() => router.push('/(tabs)/cart')}
+              />
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -105,32 +114,31 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     fontSize: typography.body,
-    color: colors.text,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     backgroundColor: colors.background,
   },
   searchBtn: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     borderRadius: radius.md,
+    ...elevation.sm,
   },
   searchBtnText: {
     color: colors.surface,
     fontWeight: '700',
     fontSize: typography.caption,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    lineHeight: lineHeight.caption,
   },
   listContent: {
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxl,
   },
   columnWrap: {
     justifyContent: 'space-between',

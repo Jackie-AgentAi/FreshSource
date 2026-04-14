@@ -3,13 +3,14 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { fetchShopHomepage } from '@/api/catalog';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { ProductCard } from '@/components/ProductCard';
 import type { BuyerProductItem, BuyerShopVO } from '@/types/catalog';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { resolveMediaUrl } from '@/utils/media';
 
 export default function ShopHomeScreen() {
@@ -65,10 +66,8 @@ export default function ShopHomeScreen() {
   }, [initialLoad]);
 
   useLayoutEffect(() => {
-    if (shop?.shop_name) {
-      navigation.setOptions({ title: shop.shop_name });
-    }
-  }, [navigation, shop?.shop_name]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const onRefresh = useCallback(async () => {
     try {
@@ -115,6 +114,10 @@ export default function ShopHomeScreen() {
 
   return (
     <PageContainer>
+      <AppHeader
+        title={shop.shop_name}
+        subtitle={`评分 ${shop.rating?.toFixed?.(1) ?? shop.rating} · 销量 ${shop.total_sales}`}
+      />
       <FlatList
         data={list}
         keyExtractor={(item) => String(item.id)}
@@ -139,7 +142,7 @@ export default function ShopHomeScreen() {
                   </Text>
                 ) : null}
                 <Text style={styles.shopMeta}>
-                  评分 {shop.rating?.toFixed?.(1) ?? shop.rating} · 累计销量 {shop.total_sales}
+                  联系电话 {shop.contact_phone || '-'}
                 </Text>
               </View>
             </View>
@@ -155,7 +158,11 @@ export default function ShopHomeScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.cardCell}>
-            <ProductCard item={item} onPress={() => router.push(`/product/${item.id}`)} />
+            <ProductCard
+              item={item}
+              onPress={() => router.push(`/product/${item.id}`)}
+              onAddToCart={() => router.push('/(tabs)/cart')}
+            />
           </View>
         )}
         contentContainerStyle={styles.listContent}
@@ -166,7 +173,8 @@ export default function ShopHomeScreen() {
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxl,
   },
   header: {
     backgroundColor: colors.surface,
@@ -174,6 +182,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    ...elevation.sm,
   },
   shopRow: {
     flexDirection: 'row',
@@ -192,18 +201,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   shopTitle: {
-    fontSize: typography.title,
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textStrong,
   },
   shopDesc: {
     marginTop: spacing.xs,
     fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
     color: colors.textSecondary,
   },
   shopMeta: {
     marginTop: spacing.sm,
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textMuted,
   },
   columnWrap: {

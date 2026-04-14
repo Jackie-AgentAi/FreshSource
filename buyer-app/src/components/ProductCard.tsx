@@ -1,22 +1,31 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { BuyerProductItem } from '@/types/catalog';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { resolveMediaUrl } from '@/utils/media';
 
 type Props = {
   item: BuyerProductItem;
   onPress: () => void;
+  onAddToCart?: (item: BuyerProductItem) => void;
+  compact?: boolean;
 };
 
-export function ProductCard({ item, onPress }: Props) {
+export function ProductCard({ item, onPress, onAddToCart, compact = false }: Props) {
   const uri = resolveMediaUrl(item.cover_image);
   const priceText =
     typeof item.price === 'number' && !Number.isNaN(item.price) ? `¥${item.price.toFixed(2)}` : '—';
+  const originalPriceText =
+    typeof item.original_price === 'number' && item.original_price > 0
+      ? `¥${item.original_price.toFixed(2)}`
+      : '';
   const shopLabel = item.shop?.shop_name || '店铺';
+  const stockLabel = item.stock > 0 ? `库存 ${item.stock}` : '库存不足';
+  const buyStep = item.step_buy > 0 ? `步长 ${item.step_buy}${item.unit || ''}` : '';
+  const addDisabled = !item.can_buy;
 
   return (
-    <Pressable style={styles.card} onPress={onPress} accessibilityRole="button">
+    <Pressable style={[styles.card, compact && styles.cardCompact]} onPress={onPress} accessibilityRole="button">
       <View style={styles.imageWrap}>
         {uri ? (
           <Image source={{ uri }} style={styles.image} resizeMode="cover" />
@@ -29,13 +38,42 @@ export function ProductCard({ item, onPress }: Props) {
         <Text style={styles.name} numberOfLines={2}>
           {item.name}
         </Text>
-        <Text style={styles.shop} numberOfLines={1}>
-          {shopLabel}
+        {!!item.subtitle && (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {item.subtitle}
+          </Text>
+        )}
+
+        <View style={styles.shopRow}>
+          <Text style={styles.shop} numberOfLines={1}>
+            {shopLabel}
+          </Text>
+        </View>
+
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>{priceText}</Text>
+          {originalPriceText ? <Text style={styles.originalPrice}>{originalPriceText}</Text> : null}
+        </View>
+
+        <Text style={styles.meta} numberOfLines={1}>
+          {item.unit ? `单位 ${item.unit}` : '单位 -'} · {stockLabel}
         </Text>
-        <Text style={styles.price}>{priceText}</Text>
-        <Text style={styles.unit} numberOfLines={1}>
-          {item.unit ? `单位：${item.unit}` : ''}
-        </Text>
+        {!!buyStep && <Text style={styles.metaMuted}>{buyStep}</Text>}
+
+        <View style={styles.actionRow}>
+          <View style={styles.minBuyTag}>
+            <Text style={styles.minBuyText}>起购 {item.min_buy}{item.unit || ''}</Text>
+          </View>
+          <Pressable
+            style={[styles.addBtn, addDisabled && styles.addBtnDisabled]}
+            disabled={addDisabled}
+            onPress={() => (onAddToCart ? onAddToCart(item) : onPress())}
+          >
+            <Text style={[styles.addBtnText, addDisabled && styles.addBtnTextDisabled]}>
+              {addDisabled ? '不可购' : '加购'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -50,6 +88,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
+    ...elevation.sm,
+  },
+  cardCompact: {
+    margin: spacing.xxs,
   },
   imageWrap: {
     position: 'relative',
@@ -77,28 +119,99 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   body: {
-    padding: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
   name: {
-    fontSize: typography.caption,
-    color: colors.text,
+    fontSize: typography.body,
+    lineHeight: lineHeight.body,
+    color: colors.textStrong,
     fontWeight: '600',
-    minHeight: 36,
+    minHeight: 44,
+  },
+  subtitle: {
+    marginTop: spacing.xxs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textSecondary,
+  },
+  shopRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   shop: {
-    marginTop: 4,
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textMuted,
   },
-  price: {
+  priceRow: {
     marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  price: {
     fontSize: typography.body,
     color: colors.primary,
     fontWeight: '700',
   },
-  unit: {
-    marginTop: 2,
+  originalPrice: {
+    marginLeft: spacing.xs,
     fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.textDisabled,
+    textDecorationLine: 'line-through',
+  },
+  meta: {
+    marginTop: spacing.xs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
     color: colors.textSecondary,
+  },
+  metaMuted: {
+    marginTop: 1,
+    fontSize: typography.micro,
+    lineHeight: lineHeight.micro,
+    color: colors.textMuted,
+  },
+  actionRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  minBuyTag: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
+  minBuyText: {
+    fontSize: typography.micro,
+    lineHeight: lineHeight.micro,
+    color: colors.textSecondary,
+  },
+  addBtn: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.primary,
+  },
+  addBtnDisabled: {
+    backgroundColor: colors.surfaceDisabled,
+    borderColor: colors.borderStrong,
+  },
+  addBtnText: {
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  addBtnTextDisabled: {
+    color: colors.textDisabled,
   },
 });
