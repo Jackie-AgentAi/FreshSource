@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.3.2 Release (2026-04-14)
+
+版本维护更新：三端应用版本统一至 **0.3.2**，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：`buyer-app` / `seller-app` / `admin-web` 的 `package.json` 与 `package-lock.json` 对齐；买卖家 App 依赖基线保持一致，便于后续同构迭代与发布。
+
 ## v0.3.1 Release (2026-04-14)
 
 管理后台 Web 完成 **P2-2 第一迭代页面闭环**，详见 [`CHANGELOG.md`](CHANGELOG.md)。

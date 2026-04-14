@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-04-14
+
+### Changed
+
+- **Package versions aligned to 0.3.2**：`buyer-app`、`seller-app`、`admin-web` 的 `package.json` / `package-lock.json` 统一升级为 `0.3.2`。
+- **Mobile app dependency baseline sync**：`buyer-app` 与 `seller-app` 依赖集合保持一致（含 `react-dom`、`react-native-web` 与 Expo Web 相关开发依赖），便于同构开发与构建一致性。
+
+### Notes
+
+- 本版本为发布维护更新，聚焦包版本与锁文件一致性，不引入新的业务接口变更。
+
 ## [0.3.1] - 2026-04-14
 
 ### Added
