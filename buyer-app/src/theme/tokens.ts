@@ -2,39 +2,42 @@ import { Platform, StyleSheet } from 'react-native';
 
 export const colors = {
   // Brand
-  primary: '#1677ff',
-  primaryPressed: '#0958d9',
-  primarySoft: '#e6f4ff',
-  success: '#16a34a',
-  warning: '#d97706',
-  danger: '#dc2626',
+  primary: '#0F4C3A',
+  primaryPressed: '#0A3328',
+  primarySoft: '#E8F0ED',
+  primaryGlow: '#1B6B52',
+  accent: '#E8B84E',
+  accentSoft: '#FAF3E0',
+  success: '#2B8A5F',
+  warning: '#8A6B1A',
+  danger: '#C5432F',
   info: '#0284c7',
 
   // Surface
-  background: '#f7f8fa',
+  background: '#F7F8F7',
   surface: '#ffffff',
-  surfaceSecondary: '#f5f7fb',
-  surfaceDisabled: '#f2f3f5',
+  surfaceSecondary: '#FBFBFA',
+  surfaceDisabled: '#EEF2EF',
 
   // Text
-  text: '#1a1a1a',
-  textStrong: '#111827',
-  textSecondary: '#666666',
-  textMuted: '#999999',
-  textDisabled: '#bfbfbf',
+  text: '#0B1210',
+  textStrong: '#0B1210',
+  textSecondary: '#2C3834',
+  textMuted: '#6B7872',
+  textDisabled: '#98A39E',
 
   // Border & divider
-  border: '#e8e8e8',
-  borderStrong: '#d9d9d9',
-  divider: '#f0f0f0',
+  border: '#E6EAE8',
+  borderStrong: '#D7DEDA',
+  divider: '#F1F4F2',
 
   // Status
-  statusPendingBg: '#fff7e6',
-  statusPendingText: '#ad6800',
-  statusSuccessBg: '#f6ffed',
-  statusSuccessText: '#389e0d',
-  statusDangerBg: '#fff1f0',
-  statusDangerText: '#cf1322',
+  statusPendingBg: '#FAF3E0',
+  statusPendingText: '#8A6B1A',
+  statusSuccessBg: '#E8F4EE',
+  statusSuccessText: '#2B8A5F',
+  statusDangerBg: '#FCEBE7',
+  statusDangerText: '#C5432F',
 };
 
 export const spacing = {

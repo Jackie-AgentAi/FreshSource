@@ -229,15 +229,15 @@ export default function CartTabPage() {
 
   return (
     <PageContainer>
-      <AppHeader title="购物车" subtitle="按店铺分组管理，支持批量结算" />
+      <AppHeader title="购物车" subtitle="分店铺批量管理与统一结算" />
       <View style={styles.toolbar}>
-        <Pressable style={styles.toolbarAction} onPress={() => void syncSelectAllServer(1)}>
-          <Text style={styles.link}>全选(同步)</Text>
+        <Pressable style={[styles.toolbarAction, styles.toolbarAccent]} onPress={() => void syncSelectAllServer(1)}>
+          <Text style={[styles.link, styles.toolbarAccentText]}>全选(同步)</Text>
         </Pressable>
         <Pressable style={styles.toolbarAction} onPress={() => void syncSelectAllServer(0)}>
           <Text style={styles.link}>取消全选(同步)</Text>
         </Pressable>
-        <Pressable style={styles.toolbarAction} onPress={onClearInvalid}>
+        <Pressable style={[styles.toolbarAction, styles.toolbarDanger]} onPress={onClearInvalid}>
           <Text style={styles.link}>清空失效</Text>
         </Pressable>
       </View>
@@ -350,12 +350,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   toolbarAction: {
     paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+  toolbarAccent: {
+    backgroundColor: colors.accentSoft,
+  },
+  toolbarDanger: {
+    backgroundColor: colors.statusDangerBg,
   },
   link: {
     color: colors.primary,
@@ -363,13 +372,16 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.caption,
     fontWeight: '600',
   },
+  toolbarAccentText: {
+    color: colors.warning,
+  },
   listContent: {
     paddingTop: spacing.sm,
   },
   sectionHeader: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSecondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -403,7 +415,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     marginBottom: spacing.sm,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -421,14 +433,14 @@ const styles = StyleSheet.create({
   checkBox: {
     width: 20,
     height: 20,
-    borderRadius: 4,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   checkBoxOn: {
     borderColor: colors.primary,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryPressed,
   },
   thumb: {
     width: 72,
@@ -457,7 +469,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.primary,
+    color: colors.primaryPressed,
     fontWeight: '700',
   },
   unit: {
@@ -543,8 +555,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.surfaceSecondary,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -577,11 +589,11 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: typography.subtitle,
     lineHeight: lineHeight.subtitle,
-    color: colors.primary,
+    color: colors.primaryPressed,
     fontWeight: '700',
   },
   checkoutBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryPressed,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radius.md,

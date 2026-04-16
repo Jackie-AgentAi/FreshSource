@@ -25,6 +25,7 @@ export default function CategoryProductsScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<'sales_desc' | 'price_asc' | 'price_desc'>('sales_desc');
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -41,6 +42,7 @@ export default function CategoryProductsScreen() {
         category_id: categoryId,
         page: nextPage,
         page_size: 20,
+        sort_by: sortBy,
       });
       if (append) {
         setList((prev) => [...prev, ...pageData.list]);
@@ -50,7 +52,7 @@ export default function CategoryProductsScreen() {
       setPage(nextPage);
       setTotalPages(pageData.pagination.total_pages || 1);
     },
-    [categoryId],
+    [categoryId, sortBy],
   );
 
   const initialLoad = useCallback(async () => {
@@ -114,13 +116,36 @@ export default function CategoryProductsScreen() {
     <PageContainer>
       <AppHeader
         title={name ? `${name}` : '分类商品'}
-        subtitle="按分类浏览并快速加购"
+        subtitle="分类筛选 + 高密度商品列表"
         right={
           <Pressable style={styles.headerAction} onPress={() => router.push('/(tabs)/categories')}>
             <Text style={styles.headerActionText}>换分类</Text>
           </Pressable>
         }
       />
+      <View style={styles.toolbar}>
+        <View style={styles.filterRow}>
+          <Pressable
+            style={[styles.filterChip, sortBy === 'sales_desc' && styles.filterChipActive]}
+            onPress={() => setSortBy('sales_desc')}
+          >
+            <Text style={[styles.filterText, sortBy === 'sales_desc' && styles.filterTextActive]}>销量优先</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.filterChip, sortBy === 'price_asc' && styles.filterChipActive]}
+            onPress={() => setSortBy('price_asc')}
+          >
+            <Text style={[styles.filterText, sortBy === 'price_asc' && styles.filterTextActive]}>价格升序</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.filterChip, sortBy === 'price_desc' && styles.filterChipActive]}
+            onPress={() => setSortBy('price_desc')}
+          >
+            <Text style={[styles.filterText, sortBy === 'price_desc' && styles.filterTextActive]}>价格降序</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.resultText}>当前共 {list.length} 件商品</Text>
+      </View>
       <FlatList
         data={list}
         keyExtractor={(item) => String(item.id)}
@@ -154,20 +179,61 @@ export default function CategoryProductsScreen() {
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xl,
   },
-  headerAction: {
+  toolbar: {
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  filterChip: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  filterChipActive: {
     backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryGlow,
+  },
+  filterText: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '600',
+  },
+  filterTextActive: {
+    color: colors.primaryPressed,
+    fontWeight: '800',
+  },
+  resultText: {
+    marginTop: spacing.xs,
+    color: colors.textMuted,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+  },
+  headerAction: {
+    backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   headerActionText: {
-    color: colors.primary,
+    color: colors.warning,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   columnWrap: {
     justifyContent: 'space-between',

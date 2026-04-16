@@ -50,10 +50,17 @@ export default function LoginPage() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.heroBackdrop} />
+      <View style={styles.heroGlow} />
       <View style={styles.hero}>
-        <Text style={styles.brand}>FreshMart</Text>
-        <Text style={styles.title}>订货端登录</Text>
-        <Text style={styles.subTitle}>快速进入采购工作台与下单流程</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.logoBadge}>
+            <Text style={styles.logoText}>F</Text>
+          </View>
+          <Text style={styles.brand}>FreshMart Order</Text>
+        </View>
+        <Text style={styles.title}>开启你的订货工作台</Text>
+        <Text style={styles.subTitle}>企业采购 · 价格透明 · 高效履约</Text>
       </View>
 
       <View style={styles.card}>
@@ -69,7 +76,7 @@ export default function LoginPage() {
               value={value}
               onChangeText={onChange}
               placeholder="请输入手机号"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="rgba(255,255,255,0.45)"
             />
           )}
         />
@@ -86,7 +93,7 @@ export default function LoginPage() {
               value={value}
               onChangeText={onChange}
               placeholder="请输入密码"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="rgba(255,255,255,0.45)"
             />
           )}
         />
@@ -110,51 +117,85 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
-    backgroundColor: colors.background,
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.xxxl,
+    backgroundColor: colors.primaryPressed,
+    position: 'relative',
+  },
+  heroBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.primaryPressed,
+  },
+  heroGlow: {
+    position: 'absolute',
+    right: -60,
+    top: 80,
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: 'rgba(232, 184, 78, 0.2)',
   },
   hero: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  logoBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    color: colors.primaryPressed,
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    fontWeight: '800',
   },
   brand: {
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '700',
-    marginBottom: spacing.xs,
   },
   title: {
     fontSize: typography.h2,
     lineHeight: lineHeight.h2,
-    fontWeight: '700',
-    color: colors.textStrong,
+    fontWeight: '800',
+    color: colors.surface,
   },
   subTitle: {
     marginTop: spacing.xs,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.72)',
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     padding: spacing.lg,
   },
   label: {
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
     marginBottom: spacing.xs,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.75)',
   },
   input: {
     height: 44,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceSecondary,
-    color: colors.textStrong,
+    borderColor: 'rgba(255,255,255,0.26)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    color: colors.surface,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
     fontSize: typography.body,
@@ -182,17 +223,17 @@ const styles = StyleSheet.create({
     color: colors.statusDangerText,
   },
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.md,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: colors.surface,
+    color: colors.primaryPressed,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   buttonDisabled: {
     opacity: 0.7,

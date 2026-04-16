@@ -105,7 +105,7 @@ export default function CategoriesTabPage() {
 
   return (
     <PageContainer>
-      <AppHeader title="分类选品" subtitle="按品类快速定位商品" />
+      <AppHeader title="商品列表" subtitle="分类筛选与高密度选品" />
       {tree.length === 0 ? (
         <EmptyState title="暂无分类" />
       ) : (
@@ -137,6 +137,11 @@ export default function CategoriesTabPage() {
             contentContainerStyle={styles.rightContent}
             showsVerticalScrollIndicator={false}
           >
+            <View style={styles.heroCard}>
+              <Text style={styles.heroLabel}>Category Hub</Text>
+              <Text style={styles.heroTitle}>精选品类 · 快速下单</Text>
+              <Text style={styles.heroDesc}>按一级分类筛选，进入子分类后快速浏览并加购。</Text>
+            </View>
             <View style={styles.rightHeader}>
               <Text style={styles.rightTitle}>{activeParent?.name || '分类'}</Text>
               <Text style={styles.rightSubTitle}>点击进入商品列表</Text>
@@ -166,8 +171,8 @@ const styles = StyleSheet.create({
   },
   leftColumn: {
     width: 96,
-    backgroundColor: colors.surfaceSecondary,
-    borderRightWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.surface,
+    borderRightWidth: 1,
     borderRightColor: colors.border,
   },
   leftContent: {
@@ -182,8 +187,8 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
   },
   leftItemActive: {
-    backgroundColor: colors.surface,
-    borderLeftColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+    borderLeftColor: colors.primaryPressed,
   },
   leftItemText: {
     fontSize: typography.small,
@@ -192,8 +197,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   leftItemTextActive: {
-    color: colors.textStrong,
-    fontWeight: '700',
+    color: colors.primaryPressed,
+    fontWeight: '800',
   },
   rightColumn: {
     flex: 1,
@@ -202,6 +207,35 @@ const styles = StyleSheet.create({
   rightContent: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,
+  },
+  heroCard: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryGlow,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...elevation.sm,
+  },
+  heroLabel: {
+    color: colors.accent,
+    fontSize: typography.micro,
+    lineHeight: lineHeight.micro,
+    letterSpacing: 1,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  heroTitle: {
+    color: colors.surface,
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    fontWeight: '800',
+  },
+  heroDesc: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    marginTop: spacing.xs,
   },
   rightHeader: {
     marginBottom: spacing.md,
@@ -216,7 +250,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   grid: {
     flexDirection: 'row',
@@ -227,11 +261,11 @@ const styles = StyleSheet.create({
     width: '48%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     ...elevation.sm,
   },
@@ -246,7 +280,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    color: colors.primary,
-    fontWeight: '700',
+    color: colors.warning,
+    fontWeight: '800',
   },
 });

@@ -21,6 +21,7 @@ export function ProductCard({ item, onPress, onAddToCart, compact = false }: Pro
       : '';
   const shopLabel = item.shop?.shop_name || '店铺';
   const stockLabel = item.stock > 0 ? `库存 ${item.stock}` : '库存不足';
+  const stockState = item.stock > 0 ? (item.stock < 20 ? '紧张' : '充足') : '缺货';
   const buyStep = item.step_buy > 0 ? `步长 ${item.step_buy}${item.unit || ''}` : '';
   const addDisabled = !item.can_buy;
 
@@ -32,7 +33,12 @@ export function ProductCard({ item, onPress, onAddToCart, compact = false }: Pro
         ) : (
           <View style={[styles.image, styles.imagePlaceholder]} />
         )}
-        {!item.can_buy ? <Text style={styles.badge}>不可售</Text> : null}
+        <View style={styles.badgeRow}>
+          <Text style={item.can_buy ? styles.badgeBrand : styles.badgeDanger}>
+            {item.can_buy ? '在售' : '不可售'}
+          </Text>
+          <Text style={stockState === '充足' ? styles.badgeStock : styles.badgeWarning}>{stockState}</Text>
+        </View>
       </View>
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={2}>
@@ -83,9 +89,9 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: spacing.xs,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
     ...elevation.sm,
@@ -97,7 +103,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface,
   },
   image: {
     width: '100%',
@@ -106,17 +112,52 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     backgroundColor: '#e5e5e5',
   },
-  badge: {
+  badgeRow: {
     position: 'absolute',
-    bottom: spacing.sm,
+    top: spacing.sm,
     left: spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    color: colors.surface,
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  badgeBrand: {
+    backgroundColor: colors.primarySoft,
+    color: colors.primaryPressed,
     fontSize: typography.small,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     overflow: 'hidden',
+    fontWeight: '700',
+  },
+  badgeDanger: {
+    backgroundColor: colors.statusDangerBg,
+    color: colors.statusDangerText,
+    fontSize: typography.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    fontWeight: '700',
+  },
+  badgeStock: {
+    backgroundColor: colors.statusSuccessBg,
+    color: colors.statusSuccessText,
+    fontSize: typography.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    fontWeight: '700',
+  },
+  badgeWarning: {
+    backgroundColor: colors.accentSoft,
+    color: colors.warning,
+    fontSize: typography.small,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    fontWeight: '700',
   },
   body: {
     paddingHorizontal: spacing.sm,
@@ -153,8 +194,8 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: typography.body,
-    color: colors.primary,
-    fontWeight: '700',
+    color: colors.primaryPressed,
+    fontWeight: '800',
   },
   originalPrice: {
     marginLeft: spacing.xs,
@@ -183,7 +224,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   minBuyTag: {
-    backgroundColor: colors.surfaceSecondary,
+    backgroundColor: colors.primarySoft,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
@@ -191,15 +232,15 @@ const styles = StyleSheet.create({
   minBuyText: {
     fontSize: typography.micro,
     lineHeight: lineHeight.micro,
-    color: colors.textSecondary,
+    color: colors.primaryPressed,
   },
   addBtn: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   addBtnDisabled: {
     backgroundColor: colors.surfaceDisabled,
@@ -208,8 +249,8 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.primary,
-    fontWeight: '700',
+    color: colors.warning,
+    fontWeight: '800',
   },
   addBtnTextDisabled: {
     color: colors.textDisabled,

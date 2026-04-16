@@ -93,8 +93,8 @@ export default function HomePage() {
   return (
     <PageContainer>
       <AppHeader
-        title="商品首页"
-        subtitle="热销推荐与快速下单"
+        title="你好，欢迎回来"
+        subtitle="今日推荐与采购快捷入口"
         right={
           <Pressable style={styles.headerAction} onPress={() => router.push('/(tabs)/cart')}>
             <Text style={styles.headerActionText}>购物车</Text>
@@ -108,7 +108,7 @@ export default function HomePage() {
           accessibilityRole="button"
           accessibilityLabel="搜索商品"
         >
-          <Text style={styles.searchPlaceholder}>搜索商品</Text>
+          <Text style={styles.searchPlaceholder}>搜索商品、品牌、货号</Text>
         </Pressable>
       </View>
 
@@ -121,8 +121,19 @@ export default function HomePage() {
         ListHeaderComponent={
           <View style={styles.listHeader}>
             <View style={styles.heroCard}>
-              <Text style={styles.heroTitle}>热门推荐</Text>
-              <Text style={styles.heroDesc}>优先展示可售、热销商品，支持快速下单。</Text>
+              <Text style={styles.heroLabel}>VIP Member</Text>
+              <Text style={styles.heroTitle}>品质优选 · 今日上新</Text>
+              <Text style={styles.heroDesc}>高复购商品优先展示，支持一键下单与快速补货。</Text>
+              <View style={styles.heroStats}>
+                <View>
+                  <Text style={styles.heroStatValue}>68</Text>
+                  <Text style={styles.heroStatLabel}>进行订单</Text>
+                </View>
+                <View>
+                  <Text style={styles.heroStatValue}>¥320</Text>
+                  <Text style={styles.heroStatLabel}>可用优惠</Text>
+                </View>
+              </View>
               <View style={styles.heroCtas}>
                 <Pressable style={styles.heroPrimaryBtn} onPress={() => router.push('/search')}>
                   <Text style={styles.heroPrimaryBtnText}>去搜索</Text>
@@ -186,28 +197,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   headerAction: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
     borderRadius: radius.pill,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
   },
   headerActionText: {
-    color: colors.primary,
+    color: colors.warning,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
     fontWeight: '700',
   },
   searchBar: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
   searchPlaceholder: {
@@ -222,25 +233,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   heroCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.primaryGlow,
     padding: spacing.lg,
     marginHorizontal: spacing.sm,
     ...elevation.sm,
   },
+  heroLabel: {
+    color: colors.accent,
+    fontSize: typography.micro,
+    lineHeight: lineHeight.micro,
+    letterSpacing: 1,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
   heroTitle: {
     fontSize: typography.h4,
     lineHeight: lineHeight.h4,
-    color: colors.textStrong,
-    fontWeight: '700',
+    color: colors.surface,
+    fontWeight: '800',
   },
   heroDesc: {
     marginTop: spacing.xs,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.75)',
+  },
+  heroStats: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  heroStatValue: {
+    color: colors.accent,
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    fontWeight: '800',
+  },
+  heroStatLabel: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: typography.micro,
+    lineHeight: lineHeight.micro,
   },
   heroCtas: {
     marginTop: spacing.md,
@@ -249,28 +284,28 @@ const styles = StyleSheet.create({
   },
   heroPrimaryBtn: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
   },
   heroPrimaryBtnText: {
-    color: colors.surface,
+    color: colors.primaryPressed,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   heroGhostBtn: {
     flex: 1,
-    backgroundColor: colors.surfaceSecondary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
   },
   heroGhostBtnText: {
-    color: colors.textStrong,
+    color: colors.surface,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
     fontWeight: '600',
@@ -285,7 +320,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.title,
     lineHeight: lineHeight.title,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.textStrong,
   },
   sectionLink: {
@@ -302,9 +337,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   catChip: {
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
@@ -313,7 +348,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   catChipText: {
-    color: colors.textStrong,
+    color: colors.primary,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
     fontWeight: '600',

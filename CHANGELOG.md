@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-04-16
+
+### Changed
+
+- **Buyer app visual consistency refresh**：订货端核心链路统一为深墨绿 + 琥珀金的商务视觉体系，覆盖登录、首页、搜索、分类、商品列表、店铺、商品详情、购物车、下单确认、订单管理、我的等关键页面。
+- **Category and shop browsing flow unified**：完成 `分类 -> 列表 -> 店铺 -> 详情 -> 下单` 的连续视觉升级，统一筛选条、信息卡片、状态标签与底部操作栏层级。
+- **Reusable design base strengthened**：升级 `tokens`、`AppHeader`、`ProductCard` 等通用层，确保商品流页面保持一致的颜色语义、边框规则与按钮反馈。
+- **Buyer app package version**：`buyer-app/package.json` 与 `buyer-app/package-lock.json` 版本提升至 `0.4.2`。
+
+### Notes
+
+- 本版本聚焦订货端 UI 一致性与品牌化提升，不新增后端业务接口。
+- `buyer-app/.env`、`seller-app/.env` 继续保持本地未跟踪，不入库。
+
 ## [0.4.0] - 2026-04-14
 
 ### Added

@@ -1,14 +1,15 @@
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useLayoutEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fetchCategoryTree } from '@/api/catalog';
+import { AppHeader } from '@/components/AppHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorRetryView } from '@/components/ErrorRetryView';
 import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import type { CategoryTreeNode } from '@/types/catalog';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
 function findNode(tree: CategoryTreeNode[], id: number): CategoryTreeNode | undefined {
   for (const n of tree) {
@@ -28,7 +29,6 @@ function findNode(tree: CategoryTreeNode[], id: number): CategoryTreeNode | unde
 export default function CategorySubScreen() {
   const { parentId } = useLocalSearchParams<{ parentId: string }>();
   const router = useRouter();
-  const navigation = useNavigation();
   const pid = Number(parentId);
 
   const [loading, setLoading] = useState(true);
@@ -64,10 +64,6 @@ export default function CategorySubScreen() {
     void load();
   }, [load]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title });
-  }, [navigation, title]);
-
   const data = useMemo(() => children, [children]);
 
   if (loading) {
@@ -88,6 +84,11 @@ export default function CategorySubScreen() {
 
   return (
     <PageContainer>
+      <AppHeader title={title} subtitle="选择子分类进入商品列表" />
+      <View style={styles.summaryBar}>
+        <Text style={styles.summaryLabel}>子分类数量</Text>
+        <Text style={styles.summaryValue}>{data.length}</Text>
+      </View>
       <FlatList
         data={data}
         keyExtractor={(item) => String(item.id)}
@@ -113,24 +114,52 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl,
   },
+  summaryBar: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primaryGlow,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    ...elevation.sm,
+  },
+  summaryLabel: {
+    color: 'rgba(255,255,255,0.74)',
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+  },
+  summaryValue: {
+    color: colors.accent,
+    fontSize: typography.title,
+    lineHeight: lineHeight.title,
+    fontWeight: '800',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.sm,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
+    ...elevation.sm,
   },
   rowText: {
     fontSize: typography.body,
-    color: colors.text,
+    color: colors.textStrong,
+    fontWeight: '600',
   },
   chevron: {
     fontSize: 22,
-    color: colors.textMuted,
+    color: colors.warning,
   },
 });

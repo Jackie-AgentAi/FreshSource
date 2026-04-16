@@ -29,9 +29,12 @@ export default function ProfilePage() {
 
   return (
     <PageContainer>
-      <AppHeader title="个人中心" subtitle="账户与常用功能" />
+      <AppHeader title="我的" subtitle="VIP 账户中心与常用功能" />
       <View style={styles.wrap}>
         <View style={styles.profileCard}>
+          <View style={styles.vipRow}>
+            <Text style={styles.vipTag}>VIP 金牌会员</Text>
+          </View>
           <Text style={styles.phoneLabel}>当前账号</Text>
           <Text style={styles.phone}>{phone || '-'}</Text>
         </View>
@@ -73,31 +76,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   profileCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.primaryGlow,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     ...elevation.sm,
   },
+  vipRow: {
+    marginBottom: spacing.sm,
+  },
+  vipTag: {
+    alignSelf: 'flex-start',
+    color: colors.warning,
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
+  },
   phoneLabel: {
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.75)',
   },
   phone: {
     fontSize: typography.body,
     lineHeight: lineHeight.body,
-    color: colors.textStrong,
+    color: colors.surface,
     fontWeight: '700',
     marginTop: spacing.xxs,
   },
   menuCard: {
     marginTop: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
     ...elevation.sm,
@@ -108,7 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   menuText: {
@@ -123,7 +140,7 @@ const styles = StyleSheet.create({
   },
   logout: {
     marginTop: spacing.lg,
-    backgroundColor: colors.statusDangerText,
+    backgroundColor: colors.primaryPressed,
     height: 44,
     minWidth: 140,
     borderRadius: radius.md,

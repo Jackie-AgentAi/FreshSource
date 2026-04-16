@@ -163,6 +163,10 @@ export default function ProductDetailScreen() {
         <View style={styles.block}>
           <Text style={styles.name}>{detail.name}</Text>
           {detail.subtitle ? <Text style={styles.subtitle}>{detail.subtitle}</Text> : null}
+          <View style={styles.badgeRow}>
+            <Text style={styles.brandBadge}>自营优选</Text>
+            <Text style={styles.accentBadge}>VIP 优惠</Text>
+          </View>
           <View style={styles.priceRow}>
             <Text style={styles.price}>{priceText}</Text>
             <Text style={styles.unit}>{detail.unit ? `/${detail.unit}` : ''}</Text>
@@ -271,11 +275,13 @@ const styles = StyleSheet.create({
   },
   block: {
     padding: spacing.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     marginTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius.lg,
+    marginHorizontal: spacing.sm,
     ...elevation.sm,
   },
   name: {
@@ -288,7 +294,32 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: colors.textMuted,
+  },
+  badgeRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  brandBadge: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
+    color: colors.primary,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.pill,
+  },
+  accentBadge: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
+    color: colors.warning,
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.pill,
   },
   priceRow: {
     marginTop: spacing.md,
@@ -299,7 +330,7 @@ const styles = StyleSheet.create({
     fontSize: typography.h3,
     lineHeight: lineHeight.h3,
     fontWeight: '800',
-    color: colors.primary,
+    color: colors.primaryPressed,
   },
   unit: {
     marginLeft: spacing.xs,
@@ -385,11 +416,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     marginTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius.lg,
+    marginHorizontal: spacing.sm,
   },
   shopLabel: {
     fontSize: typography.caption,
@@ -425,9 +458,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     flexDirection: 'row',
@@ -435,7 +468,7 @@ const styles = StyleSheet.create({
   },
   actionGhostBtn: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.primary,
     backgroundColor: colors.primarySoft,
     borderRadius: radius.md,
@@ -451,7 +484,7 @@ const styles = StyleSheet.create({
   },
   actionPrimaryBtn: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryPressed,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

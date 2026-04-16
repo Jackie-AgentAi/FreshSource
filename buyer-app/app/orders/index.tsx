@@ -113,7 +113,7 @@ export default function BuyerOrdersScreen() {
 
   return (
     <PageContainer>
-      <AppHeader title="我的订单" subtitle="跟踪订单状态与履约进度" />
+      <AppHeader title="订单管理" subtitle="全状态筛选与履约追踪" />
       <View style={styles.filterWrap}>
         {filters.map((f) => {
           const active = f.value === status || (f.value === undefined && status === undefined);
@@ -180,9 +180,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   filterChip: {
     borderWidth: 1,
@@ -190,11 +190,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   filterChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#e8f7ee',
+    borderColor: colors.primaryGlow,
+    backgroundColor: colors.primarySoft,
   },
   filterText: {
     fontSize: typography.small,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   filterTextActive: {
-    color: colors.primary,
+    color: colors.primaryPressed,
     fontWeight: '700',
   },
   content: {
@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl * 2,
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusTag: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: typography.body,
     lineHeight: lineHeight.body,
-    color: colors.primary,
+    color: colors.primaryPressed,
     fontWeight: '700',
   },
   footer: {

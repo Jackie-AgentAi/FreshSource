@@ -147,7 +147,7 @@ export default function CheckoutScreen() {
 
   return (
     <PageContainer>
-      <AppHeader title="确认订单" subtitle="确认地址、商品与费用后提交" />
+      <AppHeader title="确认订单" subtitle="地址、商品、费用统一确认" />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 140 + insets.bottom }]}>
         <Text style={styles.sectionLabel}>收货地址</Text>
         <Pressable
@@ -249,10 +249,10 @@ const styles = StyleSheet.create({
   addrCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.primaryGlow,
     padding: spacing.lg,
     ...elevation.sm,
   },
@@ -263,13 +263,13 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: lineHeight.body,
     fontWeight: '700',
-    color: colors.textStrong,
+    color: colors.surface,
   },
   addrDetail: {
     marginTop: spacing.xs,
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.78)',
   },
   addrPlaceholder: {
     fontSize: typography.body,
@@ -278,12 +278,12 @@ const styles = StyleSheet.create({
   },
   addrChevron: {
     fontSize: 22,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.68)',
     marginLeft: spacing.sm,
   },
   remark: {
     minHeight: 72,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.md,
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: lineHeight.body,
     color: colors.textStrong,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     ...elevation.sm,
   },
   summaryHeader: {
@@ -311,9 +311,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   groupCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   groupAmountBox: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
     gap: spacing.xxs,
   },
@@ -372,15 +372,15 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: lineHeight.body,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.primaryPressed,
   },
   submitBar: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.surfaceSecondary,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
@@ -400,10 +400,10 @@ const styles = StyleSheet.create({
     fontSize: typography.h4,
     lineHeight: lineHeight.h4,
     fontWeight: '800',
-    color: colors.primary,
+    color: colors.primaryPressed,
   },
   submitBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryPressed,
     minWidth: 132,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryPressed,
     borderRadius: radius.md,
   },
   backBtnText: {

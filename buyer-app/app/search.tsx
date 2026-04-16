@@ -19,6 +19,10 @@ import { ProductCard } from '@/components/ProductCard';
 import type { BuyerProductItem } from '@/types/catalog';
 import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 
+const SEARCH_HISTORY = ['意大利红酒', '特级橄榄油', '精品咖啡豆', '手工奶酪'];
+const HOT_TERMS = ['进口葡萄酒', '冷萃咖啡豆', '特级橄榄油', '有机茶饮', '蜂蜜果酱', '手工巧克力'];
+const DISCOVERY_TERMS = ['红酒专区', '精品咖啡', '进口奶酪', '调味油醋'];
+
 export default function SearchScreen() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -75,7 +79,39 @@ export default function SearchScreen() {
       ) : error ? (
         <ErrorRetryView message={error} onRetry={() => void runSearch()} />
       ) : !searched ? (
-        <EmptyState title="输入关键词后搜索" />
+        <View style={styles.guideWrap}>
+          <View style={styles.guideSection}>
+            <Text style={styles.guideTitle}>搜索历史</Text>
+            <View style={styles.tagWrap}>
+              {SEARCH_HISTORY.map((term) => (
+                <Pressable key={term} style={styles.termTag} onPress={() => setKeyword(term)}>
+                  <Text style={styles.termText}>{term}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={styles.guideSection}>
+            <Text style={styles.guideTitle}>热门搜索</Text>
+            <View style={styles.hotGrid}>
+              {HOT_TERMS.map((term, idx) => (
+                <Pressable key={term} style={styles.hotItem} onPress={() => setKeyword(term)}>
+                  <Text style={[styles.hotRank, idx < 3 && styles.hotRankTop]}>{idx + 1}</Text>
+                  <Text style={styles.hotText}>{term}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={styles.guideSection}>
+            <Text style={styles.guideTitle}>发现好货</Text>
+            <View style={styles.discoveryGrid}>
+              {DISCOVERY_TERMS.map((term) => (
+                <Pressable key={term} style={styles.discoveryItem} onPress={() => setKeyword(term)}>
+                  <Text style={styles.discoveryText}>{term}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
       ) : list.length === 0 ? (
         <EmptyState title="未找到相关商品" />
       ) : (
@@ -107,15 +143,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   input: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     fontSize: typography.body,
@@ -127,7 +163,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     ...elevation.sm,
   },
   searchBtnText: {
@@ -139,6 +175,89 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
+  },
+  guideWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.lg,
+  },
+  guideSection: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    ...elevation.sm,
+  },
+  guideTitle: {
+    fontSize: typography.subtitle,
+    lineHeight: lineHeight.subtitle,
+    color: colors.textStrong,
+    fontWeight: '800',
+    marginBottom: spacing.sm,
+  },
+  tagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  termTag: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+  termText: {
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  hotGrid: {
+    gap: spacing.sm,
+  },
+  hotItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  hotRank: {
+    width: 20,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  hotRankTop: {
+    color: colors.warning,
+  },
+  hotText: {
+    flex: 1,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    color: colors.textStrong,
+    fontWeight: '600',
+  },
+  discoveryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  discoveryItem: {
+    width: '48%',
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+  },
+  discoveryText: {
+    color: colors.warning,
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+    fontWeight: '700',
   },
   columnWrap: {
     justifyContent: 'space-between',

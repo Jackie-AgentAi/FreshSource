@@ -25,9 +25,9 @@ export function AppHeader({ title, subtitle, right }: AppHeaderProps) {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
     borderBottomLeftRadius: radius.lg,
     borderBottomRightRadius: radius.lg,
   },
@@ -46,14 +46,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: typography.h4,
     lineHeight: lineHeight.h4,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.3,
     color: colors.textStrong,
   },
   subtitle: {
     marginTop: spacing.xxs,
     fontSize: typography.small,
     lineHeight: lineHeight.small,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   right: {
     marginLeft: spacing.md,
