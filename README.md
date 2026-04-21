@@ -1,5 +1,11 @@
 # FreshMart
 
+## v0.5.0 Release (2026-04-21)
+
+版本发布更新：完成订货端 App 的结构化重构与交互补强，并将三端包版本统一提升到 `0.5.0`，详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+要点：`buyer-app` 将首页、分类、购物车、确认订单、订单、地址、商品详情、店铺、搜索、个人中心与通知页拆分到 `src/screens/*`，减少路由页内联逻辑；新增分类本地图资源、`QuantityStepper` 通用步进器与带图标的底部 Tab；`EXPO_PUBLIC_API_BASE_URL` 之外补充 Expo 宿主自动推导后端地址能力，提升真机与模拟器联调体验。
+
 ## v0.4.0 Release (2026-04-14)
 
 版本发布更新：完成订货端 App UI 升级第一阶段与核心交易链路视觉重构，详见 [`CHANGELOG.md`](CHANGELOG.md)。

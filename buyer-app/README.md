@@ -34,7 +34,14 @@ npm run start
 
 ## API base URL
 
-Configure `EXPO_PUBLIC_API_BASE_URL` when needed.
+`EXPO_PUBLIC_API_BASE_URL` 优先。
+
+在开发环境下，如果未显式配置，APP 会自动根据 Expo 当前宿主机地址推导 API 地址：
+- 真机 + LAN 模式：自动使用电脑局域网 IP，并固定后端端口 `8080`
+- Android 模拟器：回退到 `http://10.0.2.2:8080`
+- iOS 模拟器：回退到 `http://127.0.0.1:8080`
+
+如果你使用的是 Tunnel、远程调试或非默认后端端口，仍然建议显式配置 `EXPO_PUBLIC_API_BASE_URL`。
 
 Examples:
 

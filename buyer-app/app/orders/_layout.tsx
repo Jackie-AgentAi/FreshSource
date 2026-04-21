@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
 
 export default function OrdersLayout() {
-  return <Stack screenOptions={{ headerShown: true, headerBackTitle: '返回' }} />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

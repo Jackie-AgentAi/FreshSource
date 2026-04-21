@@ -20,7 +20,7 @@ export default function RootLayout() {
       <Stack.Screen name="shop" options={{ headerShown: false }} />
       <Stack.Screen name="orders" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: true, title: '搜索商品' }} />
-      <Stack.Screen name="checkout" options={{ headerShown: true, title: '确认订单' }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false }} />
       <Stack.Screen name="addresses" options={{ headerShown: false }} />
     </Stack>
   );

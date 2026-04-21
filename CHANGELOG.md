@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-21
+
+### Added
+
+- **Buyer app screen module split**：订货端新增 `src/screens/*` 结构，将首页、分类、购物车、通知、确认订单、订单、地址、商品详情、店铺页、搜索页与个人中心拆分为可复用的 screen 级模块，降低路由层复杂度。
+- **Category visual assets and stepper**：新增分类本地图片资源与 `QuantityStepper` 通用数量步进器，补齐分类浏览与数量输入的统一交互基础。
+- **Notifications entry**：新增订货端通知页面入口与通知卡片视图，完善“首页/分类/购物车/我的”之外的辅助触达场景。
+
+### Changed
+
+- **Buyer app UI refactor across core flow**：首页、分类、购物车、确认订单、订单列表/详情、地址管理、商品详情、搜索、店铺页和“我的”页面统一迁移到组件化 screen 实现，并更新底部 Tab 图标与页面头部策略。
+- **API base URL inference**：`buyer-app/src/constants/api.ts` 支持基于 Expo 当前宿主自动推导后端地址，优先读取 `EXPO_PUBLIC_API_BASE_URL`，并兼容真机 LAN、Android 模拟器和 iOS 模拟器场景。
+- **TypeScript / Expo support cleanup**：补充 `@expo/vector-icons` 依赖、调整 `tsconfig.json` 的 `.expo/types` 收录范围，并同步 `expo-env.d.ts` 所需声明，减少 Expo Router 开发期类型噪音。
+- **Version alignment to 0.5.0**：`buyer-app`、`seller-app`、`admin-web` 的 `package.json` / `package-lock.json` 统一提升至 `0.5.0`。
+
+### Notes
+
+- 本版本重点是订货端结构重整与体验收敛，不新增后端业务接口，也未引入支付、营销、IM 等超出需求范围的能力。
+- 工作区中本地环境文件依旧建议保持未跟踪；示例配置可继续参考 `.env.example`。
+
 ## [0.4.2] - 2026-04-16
 
 ### Changed
