@@ -1,109 +1,12 @@
-import { apiRequest } from '@/utils/http';
+import type { BannerItem, CategoryItem, ConfigItem, OrderItem, ProductItem, ShopItem, UserItem } from '@/types/admin';
+import type { PaginatedData } from '@/types/http';
+import { apiRequest, withQuery } from '@/utils/http';
 
-export type Pagination = {
-  page: number;
-  page_size: number;
-  total: number;
-  total_pages: number;
-};
-
-export type PaginatedData<T> = {
-  list: T[];
-  pagination: Pagination;
-};
-
-export type UserItem = {
-  id: number;
-  phone: string;
-  nickname: string;
-  role: number;
-  status: number;
-  created_at: string;
-  last_login_at?: string | null;
-};
-
-export type ShopItem = {
-  id: number;
-  user_id: number;
-  shop_name: string;
-  logo: string;
-  description: string;
-  contact_phone: string;
-  province: string;
-  city: string;
-  district: string;
-  address: string;
-  audit_status: number;
-  audit_remark: string;
-  status: number;
-  total_sales: number;
-  rating: number;
-  created_at: string;
-};
-
-export type ProductItem = {
-  id: number;
-  shop_id: number;
-  category_id: number;
-  name: string;
-  subtitle: string;
-  cover_image: string;
-  price: number;
-  stock: number;
-  sales: number;
-  status: number;
-  is_recommend: number;
-  created_at?: string;
-};
-
-export type CategoryItem = {
-  id: number;
-  parent_id: number;
-  name: string;
-  icon: string;
-  sort_order: number;
-  status: number;
-  children?: CategoryItem[];
-};
-
-export type OrderItem = {
-  id: number;
-  order_no: string;
-  shop_id: number;
-  shop_name: string;
-  buyer_id: number;
-  status: number;
-  settlement_status: number;
-  total_amount: string;
-  pay_amount: string;
-  created_at: string;
-};
-
-export type BannerItem = {
-  id: number;
-  title: string;
-  image_url: string;
-  link_type: number;
-  link_value: string;
-  position: string;
-  sort_order: number;
-  status: number;
-  start_time?: string | null;
-  end_time?: string | null;
-};
-
-export type ConfigItem = {
-  id: number;
-  config_key: string;
-  config_value: string;
-  remark: string;
-  created_at: string;
-  updated_at: string;
-};
+export type { BannerItem, CategoryItem, ConfigItem, OrderItem, ProductItem, ShopItem, UserItem } from '@/types/admin';
+export type { PaginatedData, Pagination } from '@/types/http';
 
 export async function listUsers(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return apiRequest<PaginatedData<UserItem>>(`/api/v1/admin/users?${query.toString()}`, { method: 'GET' });
+  return apiRequest<PaginatedData<UserItem>>(withQuery('/api/v1/admin/users', params), { method: 'GET' });
 }
 
 export async function updateUserStatus(id: number, status: number) {
@@ -111,8 +14,11 @@ export async function updateUserStatus(id: number, status: number) {
 }
 
 export async function listShops(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return apiRequest<PaginatedData<ShopItem>>(`/api/v1/admin/shops?${query.toString()}`, { method: 'GET' });
+  return apiRequest<PaginatedData<ShopItem>>(withQuery('/api/v1/admin/shops', params), { method: 'GET' });
+}
+
+export async function getShopDetail(id: number) {
+  return apiRequest<ShopItem>(`/api/v1/admin/shops/${id}`, { method: 'GET' });
 }
 
 export async function auditShop(id: number, audit_status: number, audit_remark: string) {
@@ -127,8 +33,7 @@ export async function closeShop(id: number) {
 }
 
 export async function listProducts(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return apiRequest<PaginatedData<ProductItem>>(`/api/v1/admin/products?${query.toString()}`, { method: 'GET' });
+  return apiRequest<PaginatedData<ProductItem>>(withQuery('/api/v1/admin/products', params), { method: 'GET' });
 }
 
 export async function auditProduct(id: number, audit_status: number) {
@@ -163,13 +68,11 @@ export async function deleteCategory(id: number) {
 }
 
 export async function listOrders(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return apiRequest<PaginatedData<OrderItem>>(`/api/v1/admin/orders?${query.toString()}`, { method: 'GET' });
+  return apiRequest<PaginatedData<OrderItem>>(withQuery('/api/v1/admin/orders', params), { method: 'GET' });
 }
 
 export function exportOrders(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return `/api/v1/admin/orders/export?${query.toString()}`;
+  return withQuery('/api/v1/admin/orders/export', params);
 }
 
 export async function updateSettlement(id: number, settlement_status: number) {
@@ -180,8 +83,7 @@ export async function updateSettlement(id: number, settlement_status: number) {
 }
 
 export async function listBanners(params: Record<string, string>) {
-  const query = new URLSearchParams(params);
-  return apiRequest<PaginatedData<BannerItem>>(`/api/v1/admin/banners?${query.toString()}`, { method: 'GET' });
+  return apiRequest<PaginatedData<BannerItem>>(withQuery('/api/v1/admin/banners', params), { method: 'GET' });
 }
 
 export async function createBanner(payload: Record<string, unknown>) {

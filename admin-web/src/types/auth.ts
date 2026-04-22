@@ -1,8 +1,6 @@
-export interface AuthEnvelope<T> {
-  code: number;
-  message: string;
-  data: T;
-}
+import type { ApiEnvelope } from '@/types/http';
+
+export type AuthEnvelope<T> = ApiEnvelope<T>;
 
 export interface LoginUser {
   id: number;

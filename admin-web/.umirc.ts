@@ -9,7 +9,6 @@ export default defineConfig({
     },
     {
       path: '/',
-      component: '@/pages/Home',
       routes: [
         { path: '/', component: '@/pages/Home' },
         { path: '/users', component: '@/pages/Users' },
@@ -19,7 +18,6 @@ export default defineConfig({
         { path: '/orders', component: '@/pages/Orders' },
         { path: '/banners', component: '@/pages/Banners' },
         { path: '/configs', component: '@/pages/Configs' },
-        { path: '/notifications', component: '@/pages/Notifications' },
       ],
     },
   ],
