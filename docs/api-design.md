@@ -2,7 +2,7 @@
 
 > **依据**：`docs/requirement.md`、`CLAUDE.md`、`docs/architecture.md`  
 > **终端映射**：订货端 → `/api/v1/buyer/` · 发货端 → `/api/v1/seller/` · 管理后台 → `/api/v1/admin/` · 公共 → `/api/v1/common/`  
-> **版本**：**v1.1.8** · **日期**：2026-04-14（v1.1.8：补充 5.6 admin 退货流转 `PUT /orders/:id/status` 与 `GET /orders/:id/logs`；继承 v1.1.1～v1.1.7）  
+> **版本**：**v1.1.9** · **日期**：2026-04-23（v1.1.9：补充 4.1 `GET /seller/shop`、细化 4.2 `GET /seller/dashboard` 统计口径与 4.6 卖家通知响应；继承 v1.1.1～v1.1.8）  
 > **支付**：无；不涉及任何支付回调接口。  
 > **文档套系**：与 `docs/task-list.md` **v1.1**、`docs/db-design.md` **v1.1** 同窗对齐（修订需同步评估另两份）。
 
@@ -196,6 +196,7 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/shop/apply` | 首次入驻 |
+| GET | `/shop` | 店铺完整资料 |
 | GET | `/shop/audit-status` | |
 | PUT | `/shop` | 修改店铺信息；若需求要求重审则置 `audit_status=0` |
 | PUT | `/shop/status` | 营业/关店 |
@@ -204,7 +205,8 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/dashboard` | 今日订单数、待确认数、销售额等（字段可迭代） |
+| GET | `/dashboard` | Query: `range=day|week|month`；返回统计概览、履约概览、库存预警、消息摘要 |
+| GET | `/categories` | 商品发布/编辑用分类树；与买家端分类树结构一致，仅返回 `status=1` 的两级分类 |
 
 ### 4.3 商品
 
@@ -239,6 +241,111 @@
 ### 4.6 通知
 
 同订货端路径模式：`/notifications`、`/notifications/unread-count`、`/notifications/:id/read`、`/notifications/read-all`。
+
+**GET `/shop`**：返回当前卖家店铺完整资料；若当前账号尚未入驻，返回 **50001**。`data` 示例：
+
+```json
+{
+  "shop_id": 12,
+  "shop_name": "鲜源直发",
+  "logo": "https://cdn.example.com/shop/logo.png",
+  "description": "主营叶菜、菌菇与时令水果",
+  "contact_phone": "13800138000",
+  "province": "上海市",
+  "city": "上海市",
+  "district": "浦东新区",
+  "address": "川沙路 88 号",
+  "business_license": "https://cdn.example.com/license.png",
+  "latitude": 31.2317,
+  "longitude": 121.4726,
+  "audit_status": 1,
+  "audit_remark": "",
+  "status": 1,
+  "created_at": "2026-04-23T10:00:00+08:00",
+  "updated_at": "2026-04-23T12:00:00+08:00"
+}
+```
+
+**GET `/dashboard`**：`range` 默认 `day`。`data` 示例：
+
+```json
+{
+  "range": "day",
+  "summary": {
+    "revenue": "2860.50",
+    "order_count": 18,
+    "average_order_value": "158.92",
+    "revenue_growth_rate": "12.50",
+    "order_growth_rate": "8.33"
+  },
+  "fulfillment": {
+    "pending_orders": 4,
+    "delivering_orders": 3,
+    "arrived_orders": 2,
+    "completed_orders": 9,
+    "cancelled_orders": 1,
+    "total_orders": 19
+  },
+  "product": {
+    "on_sale_count": 32,
+    "pending_audit_count": 5,
+    "warehouse_count": 11,
+    "low_stock_count": 3
+  },
+  "inventory_alerts": [
+    {
+      "product_id": 101,
+      "name": "云南生菜",
+      "price": "6.80",
+      "unit": "斤",
+      "stock": 6
+    }
+  ],
+  "message_overview": {
+    "unread_count": 4,
+    "latest_title": "有待确认订单需要处理"
+  }
+}
+```
+
+统计口径约定：
+
+- `day`：当天 00:00:00 至当前时间
+- `week`：最近 7 天滚动窗口
+- `month`：当月 1 日 00:00:00 至当前时间
+- `*_growth_rate`：与上一个等长周期比较，字符串保留两位小数，单位 `%`
+- `inventory_alerts`：取当前卖家 `status=1` 且 `stock<=10` 的商品，按库存升序最多返回 5 条
+
+**GET `/notifications`**：Query `type?`、`page`、`page_size`；`type` 支持 `order`、`product`、`system`。`data` 示例：
+
+```json
+{
+  "list": [
+    {
+      "id": 88,
+      "type": "order",
+      "title": "有待确认订单需要处理",
+      "content": "当前有 4 笔待确认订单，请尽快处理避免超时取消。",
+      "biz_type": "seller_pending_orders",
+      "biz_id": 12,
+      "is_read": 0,
+      "created_at": "2026-04-23T12:30:00+08:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total": 1,
+    "total_pages": 1
+  }
+}
+```
+
+**GET `/notifications/unread-count`**：`data` 为 `{ "count": 4 }`。
+
+**PUT `/notifications/:id/read`**：成功 `data` 为 `{ "ok": true }`；越权或不存在统一返回 **10003**。
+
+**PUT `/notifications/read-all`**：成功 `data` 为 `{ "ok": true }`。
 
 ---
 

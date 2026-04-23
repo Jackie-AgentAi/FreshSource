@@ -2,21 +2,21 @@ import { Platform, StyleSheet } from 'react-native';
 
 export const colors = {
   // Brand
-  primary: '#0F4C3A',
-  primaryPressed: '#0A3328',
-  primarySoft: '#E8F0ED',
-  primaryGlow: '#1B6B52',
-  accent: '#E8B84E',
-  accentSoft: '#FAF3E0',
-  success: '#2B8A5F',
-  warning: '#8A6B1A',
-  danger: '#C5432F',
+  primary: '#087A55',
+  primaryPressed: '#075F43',
+  primarySoft: '#E8F6EF',
+  primaryGlow: '#14A873',
+  accent: '#F3B23F',
+  accentSoft: '#FFF4D8',
+  success: '#188C5D',
+  warning: '#A16207',
+  danger: '#D6452F',
   info: '#0284c7',
 
   // Surface
-  background: '#F7F8F7',
+  background: '#F3F7F1',
   surface: '#ffffff',
-  surfaceSecondary: '#FBFBFA',
+  surfaceSecondary: '#FAFCF8',
   surfaceDisabled: '#EEF2EF',
 
   // Text
@@ -27,9 +27,9 @@ export const colors = {
   textDisabled: '#98A39E',
 
   // Border & divider
-  border: '#E6EAE8',
-  borderStrong: '#D7DEDA',
-  divider: '#F1F4F2',
+  border: '#DFE8E1',
+  borderStrong: '#CFE0D4',
+  divider: '#EDF3EE',
 
   // Status
   statusPendingBg: '#FAF3E0',
@@ -53,10 +53,10 @@ export const spacing = {
 
 export const radius = {
   xs: 4,
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 24,
   pill: 999,
   round: 9999,
 };

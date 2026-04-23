@@ -18,12 +18,40 @@ import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { resolveCategoryImageSource } from '@/constants/categoryAssets';
 import { useAuthStore } from '@/store/auth';
-import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import type { UserAddress } from '@/types/address';
-import type { BuyerProductItem, CategoryTreeNode } from '@/types/catalog';
+import type { BuyerProductItem, BuyerShopVO, CategoryTreeNode } from '@/types/catalog';
+import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
 import { resolveMediaUrl } from '@/utils/media';
 
 type ScreenPhase = 'loading' | 'ready' | 'error';
+
+type FeaturedShop = {
+  cover_image: string;
+  id: number;
+  rating: number;
+  shop_name: string;
+  tags: string[];
+  total_sales: number;
+};
+
+const HOME_CATEGORY_EMOJI: Record<string, string> = {
+  蔬菜: '🥬',
+  叶菜类: '🥬',
+  根茎类: '🥕',
+  猪肉: '🥩',
+  肉类: '🥩',
+  牛肉: '🥩',
+  鱼类: '🐟',
+  水产: '🐟',
+  海鲜: '🦐',
+  水果: '🍎',
+  禽蛋: '🥚',
+  蛋品: '🥚',
+  冻品: '❄️',
+  调料: '🧂',
+  粮油: '🌾',
+  其他: '🛍️',
+};
 
 function buildAddressLabel(addresses: UserAddress[]): string {
   if (addresses.length === 0) {
@@ -38,57 +66,176 @@ function buildAddressLabel(addresses: UserAddress[]): string {
   return value || '选择收货地址';
 }
 
-function normalizeQuickCategories(categories: CategoryTreeNode[]): CategoryTreeNode[] {
+function normalizeHomeCategories(categories: CategoryTreeNode[]): CategoryTreeNode[] {
   if (categories.length === 0) {
     return [];
   }
 
-  const picked = categories.slice(0, 4);
-  if (picked.length === 4) {
+  const picked = categories.slice(0, 8);
+  if (picked.length >= 8) {
     return picked;
   }
 
-  const names = new Set(picked.map((item) => item.name));
-  if (!names.has('其他')) {
-    picked.push({
-      id: -1,
+  const existingNames = new Set(picked.map((item) => item.name));
+  const fillers = ['水果', '禽蛋', '冻品', '调料', '粮油', '其他']
+    .filter((name) => !existingNames.has(name))
+    .map((name, index) => ({
+      id: -(index + 1),
       parent_id: 0,
-      name: '其他',
+      name,
       icon: '',
-      sort_order: 999,
+      sort_order: 999 + index,
       status: 1,
       children: [],
+    }));
+
+  return [...picked, ...fillers].slice(0, 8);
+}
+
+function buildShopTags(shop: BuyerShopVO): string[] {
+  const tags: string[] = [];
+
+  if (shop.rating >= 4.8) {
+    tags.push('品质保证');
+  }
+  if (shop.total_sales >= 500) {
+    tags.push('月销领先');
+  }
+  if (tags.length === 0) {
+    tags.push('新鲜直供');
+  }
+  if (tags.length === 1) {
+    tags.push('准时送达');
+  }
+
+  return tags.slice(0, 2);
+}
+
+function pickFeaturedShops(products: BuyerProductItem[]): FeaturedShop[] {
+  const unique = new Map<number, FeaturedShop>();
+
+  for (const item of products) {
+    if (unique.has(item.shop.id)) {
+      continue;
+    }
+
+    unique.set(item.shop.id, {
+      id: item.shop.id,
+      shop_name: item.shop.shop_name,
+      rating: item.shop.rating,
+      total_sales: item.shop.total_sales,
+      cover_image: item.shop.logo || item.cover_image,
+      tags: buildShopTags(item.shop),
     });
   }
 
-  return picked.slice(0, 4);
+  return Array.from(unique.values()).slice(0, 3);
 }
 
-function RecommendationCard({ item }: { item: BuyerProductItem }) {
+function CategoryTile({ category }: { category: CategoryTreeNode }) {
+  const iconSource = resolveCategoryImageSource({
+    icon: category.icon,
+    name: category.name,
+  });
+  const emoji = HOME_CATEGORY_EMOJI[category.name] ?? '🛒';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        if (category.id <= 0) {
+          router.push('/(tabs)/categories');
+          return;
+        }
+
+        if (category.children?.length) {
+          router.push(`/category/sub/${category.id}`);
+          return;
+        }
+
+        router.push(`/category/${category.id}`);
+      }}
+      style={styles.categoryTile}
+    >
+      <View style={styles.categoryIconShell}>
+        {iconSource ? (
+          <Image source={iconSource} resizeMode="cover" style={styles.categoryIconImage} />
+        ) : (
+          <Text style={styles.categoryEmoji}>{emoji}</Text>
+        )}
+      </View>
+      <Text numberOfLines={1} style={styles.categoryLabel}>
+        {category.name}
+      </Text>
+    </Pressable>
+  );
+}
+
+function RecommendedProductCard({ item }: { item: BuyerProductItem }) {
   const imageUri = resolveMediaUrl(item.cover_image);
 
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push(`/product/${item.id}`)}
-      style={styles.recommendationCard}
+      style={styles.productCard}
     >
       {imageUri ? (
-        <Image source={{ uri: imageUri }} resizeMode="cover" style={styles.recommendationImage} />
+        <Image source={{ uri: imageUri }} resizeMode="cover" style={styles.productImage} />
       ) : (
-        <View style={[styles.recommendationImage, styles.recommendationImagePlaceholder]} />
+        <View style={[styles.productImage, styles.productImagePlaceholder]} />
       )}
-      <View style={styles.recommendationBody}>
-        <Text numberOfLines={1} style={styles.recommendationName}>
+      <View style={styles.productBody}>
+        <Text numberOfLines={1} style={styles.productName}>
           {item.name}
         </Text>
-        <Text numberOfLines={1} style={styles.recommendationMeta}>
+        <Text numberOfLines={1} style={styles.productSubtitle}>
           {item.subtitle || item.shop.shop_name}
         </Text>
-        <Text style={styles.recommendationPrice}>
-          ¥{item.price.toFixed(1)}
-          <Text style={styles.recommendationUnit}>/{item.unit || '件'}</Text>
+        <View style={styles.productPriceRow}>
+          <Text style={styles.productPriceCurrency}>¥</Text>
+          <Text style={styles.productPriceValue}>{item.price.toFixed(1)}</Text>
+          <Text style={styles.productPriceUnit}>/{item.unit || '件'}</Text>
+        </View>
+        <Text numberOfLines={1} style={styles.productShopName}>
+          {item.shop.shop_name}
         </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function FeaturedShopCard({ shop }: { shop: FeaturedShop }) {
+  const imageUri = resolveMediaUrl(shop.cover_image);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/shop/${shop.id}`)}
+      style={styles.shopCard}
+    >
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} resizeMode="cover" style={styles.shopImage} />
+      ) : (
+        <View style={[styles.shopImage, styles.shopImagePlaceholder]} />
+      )}
+
+      <View style={styles.shopBody}>
+        <Text numberOfLines={1} style={styles.shopName}>
+          {shop.shop_name}
+        </Text>
+        <View style={styles.shopMetaRow}>
+          <Text style={styles.shopStar}>★</Text>
+          <Text style={styles.shopMetaText}>{shop.rating.toFixed(1)}</Text>
+          <Text style={styles.shopMetaText}>月销 {shop.total_sales}</Text>
+        </View>
+        <View style={styles.shopTagRow}>
+          {shop.tags.map((tag) => (
+            <View key={tag} style={styles.shopTag}>
+              <Text style={styles.shopTagText}>{tag}</Text>
+            </View>
+          ))}
+        </View>
       </View>
     </Pressable>
   );
@@ -101,9 +248,10 @@ export function BuyerHomeScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [recommendProducts, setRecommendProducts] = useState<BuyerProductItem[]>([]);
+  const [featuredShops, setFeaturedShops] = useState<FeaturedShop[]>([]);
   const [addressLabel, setAddressLabel] = useState('选择收货地址');
 
-  const quickCategories = useMemo(() => normalizeQuickCategories(categories), [categories]);
+  const quickCategories = useMemo(() => normalizeHomeCategories(categories), [categories]);
 
   const load = useCallback(
     async (showLoading = true) => {
@@ -113,13 +261,14 @@ export function BuyerHomeScreen() {
           setPhase('loading');
         }
 
-        const [categoryTree, recommendPage] = await Promise.all([
+        const [categoryTree, productPage] = await Promise.all([
           fetchCategoryTree(),
-          fetchBuyerProducts({ page: 1, page_size: 4, sort_by: 'sales_desc' }),
+          fetchBuyerProducts({ page: 1, page_size: 12, sort_by: 'sales_desc' }),
         ]);
 
         setCategories(categoryTree);
-        setRecommendProducts(recommendPage.list.slice(0, 2));
+        setRecommendProducts(productPage.list.slice(0, 4));
+        setFeaturedShops(pickFeaturedShops(productPage.list));
 
         if (accessToken) {
           const [addressResult] = await Promise.allSettled([fetchAddresses()]);
@@ -178,91 +327,107 @@ export function BuyerHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/addresses')}
-            style={styles.locationRow}
-          >
-            <Ionicons color={colors.surface} name="location-outline" size={20} />
-            <Text numberOfLines={1} style={styles.locationText}>
-              {addressLabel}
-            </Text>
-            <Ionicons color={colors.surface} name="chevron-forward" size={18} />
-          </Pressable>
+          <View style={styles.heroTopRow}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/addresses')}
+              style={styles.locationButton}
+            >
+              <Ionicons color="#FFFFFF" name="location-outline" size={16} />
+              <Text numberOfLines={1} style={styles.locationText}>
+                {addressLabel}
+              </Text>
+              <Ionicons color="#FFFFFF" name="chevron-forward" size={16} />
+            </Pressable>
+            <View style={styles.heroBadge}>
+              <Ionicons color="#FFFFFF" name="flash" size={13} />
+              <Text style={styles.heroBadgeText}>源头直供</Text>
+            </View>
+          </View>
+
+          <Text style={styles.heroTitle}>今天采购什么新鲜货？</Text>
+          <Text style={styles.heroSubtitle}>按分类补货，按店铺复购，帮你更快完成订货</Text>
 
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/search')}
             style={styles.searchBar}
           >
-            <Ionicons color="#A0A6B2" name="search-outline" size={20} />
+            <Ionicons color="#6B7280" name="search-outline" size={18} />
             <Text style={styles.searchText}>搜索商品、店铺</Text>
           </Pressable>
+
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatValue}>{quickCategories.length}</Text>
+              <Text style={styles.heroStatLabel}>常用分类</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatValue}>{recommendProducts.length}</Text>
+              <Text style={styles.heroStatLabel}>今日推荐</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatValue}>{featuredShops.length}</Text>
+              <Text style={styles.heroStatLabel}>优质店铺</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.categorySection}>
-          {quickCategories.map((category) => {
-            const iconSource = resolveCategoryImageSource({
-              icon: category.icon,
-              name: category.name,
-            });
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                key={`${category.id}-${category.name}`}
-                onPress={() => {
-                  if (category.id <= 0) {
-                    router.push('/(tabs)/categories');
-                    return;
-                  }
-
-                  if (category.children?.length) {
-                    router.push(`/category/sub/${category.id}`);
-                    return;
-                  }
-
-                  router.push(`/category/${category.id}`);
-                }}
-                style={styles.categoryItem}
-              >
-                <View style={styles.categoryIconWrap}>
-                  {iconSource ? (
-                    <Image source={iconSource} resizeMode="cover" style={styles.categoryIconImage} />
-                  ) : (
-                    <Ionicons
-                      color={category.name === '其他' ? colors.textMuted : colors.primaryGlow}
-                      name="storefront-outline"
-                      size={26}
-                    />
-                  )}
-                </View>
-                <Text style={styles.categoryLabel}>{category.name}</Text>
-              </Pressable>
-            );
-          })}
+          <View style={styles.categoryGrid}>
+            {quickCategories.map((category) => (
+              <CategoryTile category={category} key={`${category.id}-${category.name}`} />
+            ))}
+          </View>
         </View>
 
-        <View style={styles.recommendSection}>
+        <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>今日推荐</Text>
-            <Pressable accessibilityRole="button" onPress={() => router.push('/search')}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/search')} style={styles.sectionActionWrap}>
               <Text style={styles.sectionAction}>更多</Text>
+              <Ionicons color="#6B7280" name="chevron-forward" size={12} />
             </Pressable>
           </View>
 
           {recommendProducts.length === 0 ? (
             <View style={styles.emptyCard}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons color="#A5AAB6" name="remove-outline" size={28} />
-              </View>
               <Text style={styles.emptyTitle}>暂无推荐商品</Text>
-              <Text style={styles.emptyDesc}>稍后再来看看今日推荐吧</Text>
+              <Text style={styles.emptyDescription}>稍后再来看看今日热销单品</Text>
             </View>
           ) : (
-            <View style={styles.recommendationList}>
+            <View style={styles.productGrid}>
               {recommendProducts.map((item) => (
-                <RecommendationCard item={item} key={item.id} />
+                <RecommendedProductCard item={item} key={item.id} />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>优质店铺</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/search')}
+              style={styles.sectionActionWrap}
+            >
+              <Text style={styles.sectionAction}>更多</Text>
+              <Ionicons color="#6B7280" name="chevron-forward" size={12} />
+            </Pressable>
+          </View>
+
+          {featuredShops.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>暂无店铺推荐</Text>
+              <Text style={styles.emptyDescription}>热销商家会优先展示在这里</Text>
+            </View>
+          ) : (
+            <View style={styles.shopList}>
+              {featuredShops.map((shop) => (
+                <FeaturedShopCard key={shop.id} shop={shop} />
               ))}
             </View>
           )}
@@ -274,60 +439,136 @@ export function BuyerHomeScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 48,
-    backgroundColor: '#F2F5F2',
+    paddingHorizontal: spacing.md,
+    paddingBottom: 92,
+    backgroundColor: colors.background,
   },
   hero: {
-    backgroundColor: '#18A84A',
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
+    ...elevation.md,
   },
-  locationRow: {
+  heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
   },
   locationText: {
-    flex: 1,
-    marginLeft: spacing.sm,
+    maxWidth: 190,
+    marginLeft: spacing.xs,
+    marginRight: spacing.xs,
+    color: '#FFFFFF',
     fontSize: typography.caption,
     lineHeight: lineHeight.caption,
-    color: colors.surface,
+    fontWeight: '500',
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  heroBadgeText: {
+    color: '#FFFFFF',
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
     fontWeight: '700',
   },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+  },
+  heroSubtitle: {
+    marginTop: spacing.xs,
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: typography.caption,
+    lineHeight: lineHeight.caption,
+  },
   searchBar: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     minHeight: 44,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   searchText: {
-    marginLeft: spacing.sm,
-    color: '#A0A6B2',
-    fontSize: typography.body,
-    lineHeight: lineHeight.body,
+    color: '#6B7280',
+    fontSize: 14,
+    lineHeight: 20,
   },
-  categorySection: {
-    backgroundColor: colors.surface,
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+  heroStatsRow: {
+    marginTop: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    paddingVertical: spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  categoryItem: {
-    width: '24%',
     alignItems: 'center',
   },
-  categoryIconWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: '#F2F4F1',
+  heroStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatValue: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '800',
+  },
+  heroStatLabel: {
+    marginTop: spacing.xs,
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  categorySection: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  categoryTile: {
+    width: '25%',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  categoryIconShell: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -337,111 +578,202 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: radius.md,
   },
-  categoryLabel: {
-    fontSize: typography.caption,
-    lineHeight: lineHeight.caption,
-    color: colors.textStrong,
+  categoryEmoji: {
+    fontSize: 26,
+    lineHeight: 30,
   },
-  recommendSection: {
+  categoryLabel: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#1A1A1A',
+  },
+  sectionCard: {
+    marginTop: spacing.md,
     backgroundColor: colors.surface,
-    marginTop: spacing.sm,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-    color: colors.textStrong,
-    fontWeight: '800',
-  },
-  sectionAction: {
-    color: '#9AA0AA',
-    fontSize: typography.body,
-    lineHeight: lineHeight.body,
-  },
-  emptyCard: {
-    marginTop: spacing.xl,
-    marginHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: '#E7ECE6',
-    minHeight: 160,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...elevation.sm,
-  },
-  emptyIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.round,
-    backgroundColor: '#F6F7F6',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  emptyTitle: {
-    color: colors.textStrong,
-    fontSize: typography.subtitle,
-    lineHeight: lineHeight.subtitle,
-    fontWeight: '700',
+  sectionTitle: {
+    color: '#1A1A1A',
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
   },
-  emptyDesc: {
-    marginTop: spacing.xs,
-    color: '#9AA0AA',
-    fontSize: typography.caption,
-    lineHeight: lineHeight.caption,
+  sectionActionWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
-  recommendationList: {
-    marginTop: spacing.lg,
-    gap: spacing.md,
+  sectionAction: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
   },
-  recommendationCard: {
+  productGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: spacing.md,
+  },
+  productCard: {
+    width: '48%',
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E7ECE6',
+    borderColor: '#E5E9E5',
     overflow: 'hidden',
     ...elevation.sm,
   },
-  recommendationImage: {
+  productImage: {
     width: '100%',
-    aspectRatio: 1.6,
-    backgroundColor: '#EEF1ED',
+    aspectRatio: 1,
+    backgroundColor: '#E8EDE8',
   },
-  recommendationImagePlaceholder: {
-    backgroundColor: '#EEF1ED',
+  productImagePlaceholder: {
+    backgroundColor: '#E8EDE8',
   },
-  recommendationBody: {
+  productBody: {
     padding: spacing.md,
   },
-  recommendationName: {
-    color: colors.textStrong,
-    fontSize: typography.subtitle,
-    lineHeight: lineHeight.subtitle,
-    fontWeight: '700',
+  productName: {
+    color: '#1A1A1A',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  recommendationMeta: {
-    marginTop: spacing.xs,
-    color: '#7B8597',
-    fontSize: typography.caption,
-    lineHeight: lineHeight.caption,
+  productSubtitle: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
   },
-  recommendationPrice: {
+  productPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     marginTop: spacing.sm,
-    color: '#18A84A',
-    fontSize: typography.body,
-    lineHeight: lineHeight.body,
-    fontWeight: '800',
+    marginBottom: spacing.xs,
   },
-  recommendationUnit: {
-    color: '#7B8597',
-    fontWeight: '400',
+  productPriceCurrency: {
+    color: '#16A34A',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+  productPriceValue: {
+    color: '#16A34A',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '700',
+    marginLeft: 1,
+  },
+  productPriceUnit: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+    marginLeft: 2,
+  },
+  productShopName: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  shopList: {
+    gap: spacing.md,
+  },
+  shopCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#E5E9E5',
+    ...elevation.sm,
+  },
+  shopImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#E8EDE8',
+  },
+  shopImagePlaceholder: {
+    backgroundColor: '#E8EDE8',
+  },
+  shopBody: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  shopName: {
+    color: '#1A1A1A',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  shopMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  shopStar: {
+    color: colors.accent,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  shopMetaText: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  shopTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  shopTag: {
+    backgroundColor: 'rgba(22,163,74,0.1)',
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  shopTagText: {
+    color: '#16A34A',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '500',
+  },
+  emptyCard: {
+    minHeight: 120,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: '#E5E9E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  emptyTitle: {
+    color: '#1A1A1A',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  emptyDescription: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.xs,
   },
 });

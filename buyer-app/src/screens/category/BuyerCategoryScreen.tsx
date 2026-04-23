@@ -8,7 +8,6 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -40,6 +39,62 @@ function normalizeChildOptions(category: CategoryTreeNode | undefined): Category
   return [category];
 }
 
+function CategoryProductCard({
+  adding,
+  item,
+  onAddToCart,
+}: {
+  adding: boolean;
+  item: BuyerProductItem;
+  onAddToCart: (item: BuyerProductItem) => void;
+}) {
+  const imageUri = resolveMediaUrl(item.cover_image);
+  const unitLabel = item.unit || '斤';
+  const priceText = Number.isFinite(item.price) ? item.price.toFixed(1) : '--';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/product/${item.id}`)}
+      style={styles.productCard}
+    >
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.productCover} />
+      ) : (
+        <View style={[styles.productCover, styles.productCoverPlaceholder]} />
+      )}
+
+      <View style={styles.productBody}>
+        <Text numberOfLines={1} style={styles.productName}>
+          {item.name}
+        </Text>
+        <Text numberOfLines={1} style={styles.productSubtitle}>
+          {item.subtitle || item.shop.shop_name}
+        </Text>
+        <Text numberOfLines={1} style={styles.productSales}>
+          月销 {item.shop.total_sales}
+        </Text>
+
+        <View style={styles.productBottomRow}>
+          <View style={styles.productPriceWrap}>
+            <Text style={styles.productCurrency}>¥</Text>
+            <Text style={styles.productPrice}>{priceText}</Text>
+            <Text style={styles.productUnit}>/{unitLabel}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={adding || !item.can_buy}
+            onPress={() => onAddToCart(item)}
+            style={[styles.addButton, (!item.can_buy || adding) && styles.addButtonDisabled]}
+          >
+            <Text style={styles.addButtonText}>{adding ? '加入中' : '加入购物车'}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export function BuyerCategoryScreen() {
   const [phase, setPhase] = useState<Phase>('loading');
   const [productsPhase, setProductsPhase] = useState<Phase>('loading');
@@ -66,7 +121,11 @@ export function BuyerCategoryScreen() {
   );
 
   const loadCategories = useCallback(
-    async (showLoading = true, preferredParentId: number | null = null, preferredChildId: number | null = null) => {
+    async (
+      showLoading = true,
+      preferredParentId: number | null = null,
+      preferredChildId: number | null = null,
+    ) => {
       try {
         setErrorMessage('');
         if (showLoading) {
@@ -94,35 +153,38 @@ export function BuyerCategoryScreen() {
     [],
   );
 
-  const loadProducts = useCallback(async (categoryId: number, nextPage = 1, append = false, showLoading = true) => {
-    try {
-      setProductsError('');
-      if (showLoading) {
-        setProductsPhase('loading');
-      }
+  const loadProducts = useCallback(
+    async (categoryId: number, nextPage = 1, append = false, showLoading = true) => {
+      try {
+        setProductsError('');
+        if (showLoading) {
+          setProductsPhase('loading');
+        }
 
-      const pageData = await fetchBuyerProducts({
-        category_id: categoryId,
-        page: nextPage,
-        page_size: PAGE_SIZE,
-      });
+        const pageData = await fetchBuyerProducts({
+          category_id: categoryId,
+          page: nextPage,
+          page_size: PAGE_SIZE,
+        });
 
-      setProducts((prev) => (append ? [...prev, ...pageData.list] : pageData.list));
-      setPage(nextPage);
-      setTotalPages(pageData.pagination.total_pages || 1);
-      setProductsPhase('ready');
-    } catch (error) {
-      setProductsError(error instanceof Error ? error.message : '商品加载失败');
-      if (append) {
+        setProducts((prev) => (append ? [...prev, ...pageData.list] : pageData.list));
+        setPage(nextPage);
+        setTotalPages(pageData.pagination.total_pages || 1);
         setProductsPhase('ready');
-      } else {
-        setProductsPhase('error');
-        setProducts([]);
-        setPage(1);
-        setTotalPages(1);
+      } catch (error) {
+        setProductsError(error instanceof Error ? error.message : '商品加载失败');
+        if (append) {
+          setProductsPhase('ready');
+        } else {
+          setProductsPhase('error');
+          setProducts([]);
+          setPage(1);
+          setTotalPages(1);
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     void loadCategories();
@@ -223,56 +285,6 @@ export function BuyerCategoryScreen() {
     );
   }, [activeChild, activeChildId, loadProducts, productsError, productsPhase]);
 
-  const renderProductRow = useCallback(
-    (item: BuyerProductItem) => {
-      const imageUri = resolveMediaUrl(item.cover_image);
-      const unitLabel = item.unit || '斤';
-      const priceText = Number.isFinite(item.price) ? item.price.toFixed(1) : '--';
-      const adding = addingProductId === item.id;
-
-      return (
-        <Pressable
-          accessibilityRole="button"
-          key={item.id}
-          onPress={() => router.push(`/product/${item.id}`)}
-          style={styles.productCard}
-        >
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.productCover} />
-          ) : (
-            <View style={[styles.productCover, styles.productCoverPlaceholder]} />
-          )}
-
-          <View style={styles.productBody}>
-            <Text numberOfLines={1} style={styles.productName}>
-              {item.name}
-            </Text>
-            <Text numberOfLines={1} style={styles.productSubtitle}>
-              {item.subtitle || '源头直采 现货供应'}
-            </Text>
-            <Text style={styles.productSales}>月销 {item.shop.total_sales}</Text>
-
-            <View style={styles.productBottomRow}>
-              <Text style={styles.productPrice}>
-                ￥{priceText}
-                <Text style={styles.productUnit}>/{unitLabel}</Text>
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                disabled={adding || !item.can_buy}
-                onPress={() => void onAddToCart(item)}
-                style={[styles.addButton, (!item.can_buy || adding) && styles.addButtonDisabled]}
-              >
-                <Text style={styles.addButtonText}>{adding ? '加入中' : '加入购物车'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Pressable>
-      );
-    },
-    [addingProductId, onAddToCart],
-  );
-
   if (phase === 'loading') {
     return (
       <PageContainer>
@@ -290,49 +302,60 @@ export function BuyerCategoryScreen() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer contentContainerStyle={styles.page}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons color={colors.textStrong} name="chevron-back" size={22} />
-        </Pressable>
+        <View style={styles.headerTitleRow}>
+          <View>
+            <Text style={styles.headerTitle}>分类采购</Text>
+            <Text style={styles.headerSubtitle}>快速筛选常用食材，直接加入购物车</Text>
+          </View>
+          <View style={styles.headerBadge}>
+            <Ionicons color={colors.primary} name="leaf-outline" size={14} />
+            <Text style={styles.headerBadgeText}>新鲜到货</Text>
+          </View>
+        </View>
         <Pressable accessibilityRole="button" onPress={() => router.push('/search')} style={styles.searchBar}>
-          <Ionicons color="#9AA39E" name="search-outline" size={18} />
+          <Ionicons color="#6B7280" name="search-outline" size={18} />
           <Text style={styles.searchText}>搜索商品</Text>
         </Pressable>
       </View>
 
       <View style={styles.panel}>
-        <ScrollView contentContainerStyle={styles.leftContent} showsVerticalScrollIndicator={false} style={styles.leftPanel}>
-          {categories.map((item) => {
-            const active = item.id === activeParent?.id;
-            return (
-              <Pressable
-                accessibilityRole="button"
-                key={item.id}
-                onPress={() => setActiveParentId(item.id)}
-                style={[styles.leftItem, active && styles.leftItemActive]}
-              >
-                {active ? <View style={styles.leftIndicator} /> : null}
-                <Text numberOfLines={1} style={[styles.leftItemText, active && styles.leftItemTextActive]}>
-                  {item.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.leftPanel}>
+          <FlatList
+            contentContainerStyle={styles.leftContent}
+            data={categories}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => {
+              const active = item.id === activeParent?.id;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setActiveParentId(item.id)}
+                  style={[styles.leftItem, active && styles.leftItemActive]}
+                >
+                  <View style={[styles.leftIndicator, active && styles.leftIndicatorActive]} />
+                  <Text numberOfLines={1} style={[styles.leftItemText, active && styles.leftItemTextActive]}>
+                    {item.name}
+                  </Text>
+                </Pressable>
+              );
+            }}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
 
         <View style={styles.rightPanel}>
           <FlatList
             contentContainerStyle={styles.productContent}
             data={products}
-            extraData={productsPhase}
             keyExtractor={(item) => String(item.id)}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={renderProductEmpty}
             ListFooterComponent={
               loadingMore ? (
                 <View style={styles.footer}>
-                  <ActivityIndicator color="#18A84A" />
+                  <ActivityIndicator color="#16A34A" />
                 </View>
               ) : (
                 <View style={styles.footerSpace} />
@@ -340,7 +363,7 @@ export function BuyerCategoryScreen() {
             }
             ListHeaderComponent={
               <View style={styles.rightHeader}>
-                <View style={styles.tagsContent}>
+                <View style={styles.tagRow}>
                   {childOptions.map((item) => {
                     const active = item.id === activeChild?.id;
                     return (
@@ -357,10 +380,16 @@ export function BuyerCategoryScreen() {
                 </View>
               </View>
             }
-            onEndReachedThreshold={0.25}
             onEndReached={() => void onEndReached()}
+            onEndReachedThreshold={0.25}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
-            renderItem={({ item }) => renderProductRow(item)}
+            renderItem={({ item }) => (
+              <CategoryProductCard
+                adding={addingProductId === item.id}
+                item={item}
+                onAddToCart={(product) => void onAddToCart(product)}
+              />
+            )}
             showsVerticalScrollIndicator={false}
           />
         </View>
@@ -370,61 +399,90 @@ export function BuyerCategoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  page: {
+    backgroundColor: colors.background,
+  },
   header: {
-    backgroundColor: '#F5F7F5',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E7EBE8',
+    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  headerTitle: {
+    color: colors.textStrong,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
+  },
+  headerSubtitle: {
+    marginTop: spacing.xs,
+    color: colors.textMuted,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+  },
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  headerBadgeText: {
+    color: colors.primary,
+    fontSize: typography.small,
+    lineHeight: lineHeight.small,
+    fontWeight: '700',
+  },
+  searchBar: {
+    height: 44,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  backButton: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchBar: {
-    flex: 1,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#EAEFED',
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
   searchText: {
+    color: '#6B7280',
     fontSize: 14,
     lineHeight: 20,
-    color: '#9AA39E',
   },
   panel: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#EFF2F0',
+    backgroundColor: colors.background,
   },
   leftPanel: {
-    width: 82,
-    backgroundColor: '#E7ECE8',
+    width: 104,
+    backgroundColor: colors.surfaceSecondary,
     borderRightWidth: 1,
-    borderRightColor: '#DDE3DE',
+    borderRightColor: colors.border,
   },
   leftContent: {
     paddingVertical: spacing.xs,
   },
   leftItem: {
     minHeight: 56,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.sm,
     justifyContent: 'center',
-    backgroundColor: '#E7ECE8',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surfaceSecondary,
   },
   leftItemActive: {
-    backgroundColor: '#F6FAF7',
+    backgroundColor: colors.surface,
   },
   leftIndicator: {
     position: 'absolute',
@@ -434,128 +492,145 @@ const styles = StyleSheet.create({
     width: 3,
     borderTopRightRadius: radius.pill,
     borderBottomRightRadius: radius.pill,
-    backgroundColor: '#1FB05A',
+    backgroundColor: 'transparent',
+  },
+  leftIndicatorActive: {
+    backgroundColor: colors.primary,
   },
   leftItemText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#101812',
-    fontWeight: '600',
+    color: '#1A1A1A',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   leftItemTextActive: {
-    color: '#15A24D',
+    color: colors.primary,
+    fontWeight: '600',
   },
   rightPanel: {
     flex: 1,
-    backgroundColor: '#F4F6F4',
+    backgroundColor: colors.background,
   },
   rightHeader: {
-    paddingTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
-    backgroundColor: '#F4F6F4',
   },
-  tagsContent: {
+  tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
     gap: spacing.sm,
   },
   tag: {
     minHeight: 32,
     borderRadius: radius.pill,
+    backgroundColor: colors.surfaceSecondary,
     borderWidth: 1,
-    borderColor: '#E5E9E6',
-    backgroundColor: '#ECEFEC',
+    borderColor: colors.border,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tagActive: {
-    borderColor: '#D5E8DA',
-    backgroundColor: '#DFF3E6',
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
   },
   tagText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#141B16',
-    fontWeight: '600',
+    color: '#1A1A1A',
+    fontSize: 13,
+    lineHeight: 18,
   },
   tagTextActive: {
-    color: '#0E9A47',
+    color: colors.primary,
+    fontWeight: '600',
   },
   productContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.sm,
+    padding: spacing.md,
     paddingBottom: spacing.lg,
   },
   productCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#DBE2DC',
-    backgroundColor: '#F7F9F7',
-    padding: spacing.sm,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    gap: spacing.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   productCover: {
-    width: 88,
-    height: 88,
-    borderRadius: 12,
-    backgroundColor: '#DDE4DE',
+    width: 96,
+    height: 96,
+    borderRadius: 10,
+    backgroundColor: '#E8EDE8',
   },
   productCoverPlaceholder: {
-    backgroundColor: '#DDE4DE',
+    backgroundColor: '#E8EDE8',
   },
   productBody: {
     flex: 1,
-    marginLeft: spacing.sm,
+    minWidth: 0,
+    justifyContent: 'space-between',
   },
   productName: {
-    fontSize: 16,
+    color: '#1A1A1A',
+    fontSize: 15,
     lineHeight: 22,
-    color: '#101812',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   productSubtitle: {
-    marginTop: 2,
+    color: '#6B7280',
     fontSize: 12,
-    lineHeight: 16,
-    color: '#5E6E63',
+    lineHeight: 18,
+    marginTop: 2,
   },
   productSales: {
-    marginTop: 2,
+    color: '#6B7280',
     fontSize: 12,
-    lineHeight: 16,
-    color: '#4F6155',
+    lineHeight: 18,
+    marginTop: 2,
   },
   productBottomRow: {
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
-  productPrice: {
+  productPriceWrap: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     flex: 1,
-    fontSize: 28,
-    lineHeight: 30,
-    color: '#0EA14B',
-    fontWeight: '700',
   },
-  productUnit: {
-    fontSize: 16,
-    lineHeight: 18,
-    color: '#1C2A22',
+  productCurrency: {
+    color: '#16A34A',
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
   },
+  productPrice: {
+    color: '#16A34A',
+    fontSize: 24,
+    lineHeight: 28,
+    fontWeight: '700',
+    marginLeft: 1,
+  },
+  productUnit: {
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+    marginLeft: 2,
+  },
   addButton: {
-    minWidth: 62,
-    borderRadius: 10,
-    backgroundColor: '#14A94D',
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 6,
+    minWidth: 76,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -563,10 +638,10 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   addButtonText: {
-    fontSize: 14,
-    lineHeight: 16,
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
     textAlign: 'center',
   },
   footer: {

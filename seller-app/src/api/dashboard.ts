@@ -1,49 +1,32 @@
 import { client } from '@/api/client';
-import type { SellerDashboardMetrics, SellerShopAuditStatus } from '@/types/dashboard';
-import type { SellerOrderListData } from '@/types/order';
+import type { ApiEnvelope } from '@/types/api';
+import type { SellerDashboardMetrics, SellerDashboardRange } from '@/types/dashboard';
 
-type ApiEnvelope<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
-async function fetchSellerOrders(status?: number): Promise<SellerOrderListData> {
-  const { data } = await client.get<ApiEnvelope<SellerOrderListData>>('/api/v1/seller/orders', {
-    params: {
-      status,
-      page: 1,
-      page_size: 1,
-    },
-  });
-  return data.data;
+function unwrap<T>(resp: ApiEnvelope<T>): T {
+  if (resp.code !== 0 || resp.data === undefined || resp.data === null) {
+    throw new Error(resp.message || 'request failed');
+  }
+  return resp.data;
 }
 
-export async function fetchSellerDashboardMetrics(): Promise<SellerDashboardMetrics> {
-  const [all, pending, delivering, arrived, completed, cancelled] = await Promise.all([
-    fetchSellerOrders(),
-    fetchSellerOrders(0),
-    fetchSellerOrders(2),
-    fetchSellerOrders(3),
-    fetchSellerOrders(4),
-    fetchSellerOrders(5),
-  ]);
-
+function normalizeMetrics(data: Omit<SellerDashboardMetrics, 'total_orders' | 'pending_orders' | 'delivering_orders' | 'arrived_orders' | 'completed_orders' | 'cancelled_orders'>): SellerDashboardMetrics {
   return {
-    total_orders: all.pagination.total || 0,
-    pending_orders: pending.pagination.total || 0,
-    delivering_orders: delivering.pagination.total || 0,
-    arrived_orders: arrived.pagination.total || 0,
-    completed_orders: completed.pagination.total || 0,
-    cancelled_orders: cancelled.pagination.total || 0,
+    ...data,
+    total_orders: data.fulfillment.total_orders,
+    pending_orders: data.fulfillment.pending_orders,
+    delivering_orders: data.fulfillment.delivering_orders,
+    arrived_orders: data.fulfillment.arrived_orders,
+    completed_orders: data.fulfillment.completed_orders,
+    cancelled_orders: data.fulfillment.cancelled_orders,
   };
 }
 
-export async function fetchSellerShopAuditStatus(): Promise<SellerShopAuditStatus | null> {
-  try {
-    const { data } = await client.get<ApiEnvelope<SellerShopAuditStatus>>('/api/v1/seller/shop/audit-status');
-    return data.data;
-  } catch {
-    return null;
-  }
+export async function fetchSellerDashboardMetrics(range: SellerDashboardRange = 'day'): Promise<SellerDashboardMetrics> {
+  const { data } = await client.get<ApiEnvelope<Omit<SellerDashboardMetrics, 'total_orders' | 'pending_orders' | 'delivering_orders' | 'arrived_orders' | 'completed_orders' | 'cancelled_orders'>>>(
+    '/api/v1/seller/dashboard',
+    {
+      params: { range },
+    },
+  );
+  return normalizeMetrics(unwrap(data));
 }

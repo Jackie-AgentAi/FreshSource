@@ -18,7 +18,7 @@ import { LoadingView } from '@/components/LoadingView';
 import { PageContainer } from '@/components/PageContainer';
 import { useCheckoutDraftStore } from '@/store/checkoutDraft';
 import type { CartItemView, CartShopGroup } from '@/types/cart';
-import { colors, lineHeight, spacing, typography } from '@/theme/tokens';
+import { colors, spacing } from '@/theme/tokens';
 
 import { CartShopCard } from './components/CartShopCard';
 
@@ -32,6 +32,10 @@ function collectValidItemIds(groups: CartShopGroup[]): number[] {
     }
   }
   return ids;
+}
+
+function collectGroupSelectableIds(group: CartShopGroup): number[] {
+  return group.items.filter((item) => !item.is_invalid).map((item) => item.id);
 }
 
 export function BuyerCartScreen() {
@@ -68,7 +72,9 @@ export function BuyerCartScreen() {
   const allSelected = validIds.length > 0 && validIds.every((id) => selectedIds.has(id));
   const selectedValidItems = useMemo(
     () =>
-      groups.flatMap((group) => group.items).filter((item) => !item.is_invalid && selectedIds.has(item.id)),
+      groups
+        .flatMap((group) => group.items)
+        .filter((item) => !item.is_invalid && selectedIds.has(item.id)),
     [groups, selectedIds],
   );
   const selectedCount = selectedValidItems.length;
@@ -77,13 +83,8 @@ export function BuyerCartScreen() {
     0,
   );
 
-  const toggleSelectAll = () => {
-    const nextSelected = allSelected ? new Set<number>() : new Set(validIds);
-    setSelectedIds(nextSelected);
-  };
-
   const toggleItem = (item: CartItemView) => {
-    if (item.is_invalid) {
+    if (item.is_invalid && !manageMode) {
       return;
     }
     setSelectedIds((prev) => {
@@ -93,6 +94,28 @@ export function BuyerCartScreen() {
       } else {
         next.add(item.id);
       }
+      return next;
+    });
+  };
+
+  const toggleGroup = (group: CartShopGroup) => {
+    const ids = collectGroupSelectableIds(group);
+    if (ids.length === 0) {
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const fullySelected = ids.every((id) => next.has(id));
+
+      ids.forEach((id) => {
+        if (fullySelected) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+      });
+
       return next;
     });
   };
@@ -129,7 +152,7 @@ export function BuyerCartScreen() {
     }
   };
 
-  const handleManageAction = async () => {
+  const handlePrimaryAction = async () => {
     if (manageMode) {
       if (selectedIds.size === 0) {
         Alert.alert('提示', '请选择要删除的商品');
@@ -158,13 +181,13 @@ export function BuyerCartScreen() {
     try {
       await selectAllCartItems(selected ? 1 : 0);
     } catch {
-      /* 服务端当前没有逐项选择，这里失败时不阻塞本地交互 */
+      // Keep local interaction responsive even if backend selection sync fails.
     }
   };
 
   const handleToggleAll = () => {
     const nextAllSelected = !allSelected;
-    toggleSelectAll();
+    setSelectedIds(nextAllSelected ? new Set(validIds) : new Set());
     void syncSelectAll(nextAllSelected);
   };
 
@@ -196,34 +219,68 @@ export function BuyerCartScreen() {
   return (
     <PageContainer>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={() => router.replace('/(tabs)')} style={styles.headerIcon}>
-          <Ionicons color={colors.textStrong} name="chevron-back" size={28} />
-        </Pressable>
         <Text style={styles.headerTitle}>购物车</Text>
-        <Pressable accessibilityRole="button" onPress={() => setManageMode((prev) => !prev)} style={styles.manageButton}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setManageMode((prev) => !prev)}
+          style={styles.manageButton}
+        >
           <Text style={styles.manageText}>{manageMode ? '完成' : '管理'}</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 114 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 104 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         {groups.length === 0 ? (
-          <EmptyState title="购物车为空" description="去首页挑点新鲜食材吧" />
+          <EmptyState
+            title="购物车为空"
+            description="去首页挑点新鲜食材吧"
+            actionText="去采购"
+            onAction={() => router.push('/(tabs)/categories')}
+          />
         ) : (
           <>
-            {groups.map((group) => (
-              <CartShopCard
-                group={group}
-                key={group.shop_id}
-                manageMode={manageMode}
-                onDeleteItem={removeItem}
-                onOpenItem={(item) => router.push(`/product/${item.product_id}`)}
-                onToggleItem={toggleItem}
-                onUpdateQuantity={(item, next) => void updateQuantity(item, next)}
-                selectedIds={selectedIds}
-              />
-            ))}
+            <View style={styles.summaryCard}>
+              <View>
+                <Text style={styles.summaryTitle}>采购清单</Text>
+                <Text style={styles.summaryDesc}>
+                  {groups.length} 家店铺 · {validIds.length} 件可结算商品
+                </Text>
+              </View>
+              <View style={styles.summaryPill}>
+                <Text style={styles.summaryPillText}>{manageMode ? '管理模式' : `已选 ${selectedCount}`}</Text>
+              </View>
+            </View>
 
-            <Pressable accessibilityRole="button" onPress={() => void handleClearInvalid()} style={styles.clearInvalidButton}>
+            {groups.map((group) => {
+              const shopSelectedIds = collectGroupSelectableIds(group);
+              const shopSelected =
+                shopSelectedIds.length > 0 &&
+                shopSelectedIds.every((id) => selectedIds.has(id));
+
+              return (
+                <CartShopCard
+                  group={group}
+                  key={group.shop_id}
+                  manageMode={manageMode}
+                  onDeleteItem={removeItem}
+                  onOpenItem={(item) => router.push(`/product/${item.product_id}`)}
+                  onToggleItem={toggleItem}
+                  onToggleShop={toggleGroup}
+                  onUpdateQuantity={(item, next) => void updateQuantity(item, next)}
+                  selectedIds={selectedIds}
+                  shopSelected={shopSelected}
+                />
+              );
+            })}
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void handleClearInvalid()}
+              style={styles.clearInvalidButton}
+            >
               <Text style={styles.clearInvalidText}>清理失效商品</Text>
             </Pressable>
           </>
@@ -232,23 +289,35 @@ export function BuyerCartScreen() {
 
       {groups.length > 0 ? (
         <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-          <Pressable accessibilityRole="button" onPress={handleToggleAll} style={styles.footerLeft}>
-            <View style={[styles.footerCheck, allSelected && styles.footerCheckActive]}>
-              {allSelected ? <Ionicons color={colors.surface} name="checkmark" size={16} /> : null}
-            </View>
-            <Text style={styles.footerLabel}>全选</Text>
-          </Pressable>
+          <View style={styles.footerLeft}>
+            <Pressable accessibilityRole="button" onPress={handleToggleAll} style={styles.selectAllWrap}>
+              <View style={[styles.footerCheck, allSelected && styles.footerCheckActive]}>
+                {allSelected ? <Ionicons color="#FFFFFF" name="checkmark" size={14} /> : null}
+              </View>
+              <Text style={styles.footerLabel}>全选</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.summaryWrap}>
-            <Text style={styles.summaryTop}>已选 {selectedCount} 件</Text>
+            <Text style={styles.summaryTop}>已选 {manageMode ? selectedIds.size : selectedCount} 件</Text>
             {!manageMode ? (
-              <Text style={styles.summaryAmount}>
-                合计: <Text style={styles.summaryAmountStrong}>¥{selectedAmount.toFixed(2)}</Text>
-              </Text>
+              <View style={styles.summaryAmountRow}>
+                <Text style={styles.summaryAmountLabel}>合计:</Text>
+                <Text style={styles.summaryAmountCurrency}>¥</Text>
+                <Text style={styles.summaryAmountValue}>{selectedAmount.toFixed(2)}</Text>
+              </View>
             ) : null}
           </View>
 
-          <Pressable accessibilityRole="button" onPress={() => void handleManageAction()} style={styles.actionButton}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void handlePrimaryAction()}
+            style={[
+              styles.actionButton,
+              ((manageMode && selectedIds.size === 0) || (!manageMode && selectedCount === 0)) &&
+                styles.actionButtonDisabled,
+            ]}
+          >
             <Text style={styles.actionButtonText}>{manageMode ? '删除' : '结算'}</Text>
           </Pressable>
         </View>
@@ -259,124 +328,175 @@ export function BuyerCartScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    height: 88,
+    height: 68,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8EDE8',
+    borderBottomColor: colors.border,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerTitle: {
-    fontSize: 24,
-    lineHeight: 32,
     color: colors.textStrong,
-    fontWeight: '700',
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
   },
   manageButton: {
-    minWidth: 48,
+    minWidth: 44,
     alignItems: 'flex-end',
   },
   manageText: {
-    fontSize: typography.title,
-    lineHeight: lineHeight.title,
-    color: '#6B7280',
-    fontWeight: '600',
+    color: colors.primary,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
   },
   content: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    backgroundColor: colors.background,
+  },
+  summaryCard: {
+    marginBottom: spacing.md,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primary,
     padding: spacing.lg,
-    backgroundColor: '#F3F6F3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '800',
+  },
+  summaryDesc: {
+    marginTop: spacing.xs,
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  summaryPill: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  summaryPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
   },
   clearInvalidButton: {
     alignSelf: 'center',
     marginTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   clearInvalidText: {
-    fontSize: typography.caption,
-    lineHeight: lineHeight.caption,
-    color: '#F87171',
-    fontWeight: '600',
+    color: '#DC2626',
+    fontSize: 12,
+    lineHeight: 18,
   },
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E8EDE8',
-    paddingHorizontal: spacing.lg,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
   },
   footerLeft: {
+    width: 64,
+  },
+  selectAllWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
   footerCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#D7DED9',
+    borderColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   footerCheckActive: {
-    backgroundColor: '#18A84A',
-    borderColor: '#18A84A',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   footerLabel: {
-    fontSize: 18,
-    lineHeight: 24,
-    color: colors.textStrong,
+    color: '#1A1A1A',
+    fontSize: 14,
+    lineHeight: 20,
   },
   summaryWrap: {
     flex: 1,
     alignItems: 'flex-end',
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.md,
   },
   summaryTop: {
-    fontSize: typography.subtitle,
-    lineHeight: lineHeight.subtitle,
     color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
   },
-  summaryAmount: {
-    marginTop: spacing.xs,
-    fontSize: typography.subtitle,
-    lineHeight: lineHeight.subtitle,
+  summaryAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 2,
+  },
+  summaryAmountLabel: {
     color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
   },
-  summaryAmountStrong: {
-    color: '#18A84A',
-    fontSize: 22,
-    lineHeight: 28,
+  summaryAmountCurrency: {
+    color: colors.primary,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    marginLeft: spacing.xs,
+  },
+  summaryAmountValue: {
+    color: colors.primary,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: '700',
+    marginLeft: 1,
   },
   actionButton: {
-    width: 160,
-    minHeight: 84,
-    borderRadius: 26,
-    backgroundColor: '#18A84A',
+    minWidth: 104,
+    minHeight: 42,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  actionButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
   actionButtonText: {
-    fontSize: 24,
-    lineHeight: 32,
-    color: colors.surface,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
   },
 });

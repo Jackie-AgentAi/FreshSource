@@ -18,6 +18,27 @@ export async function fetchSellerProducts(params?: {
   return unwrap(data);
 }
 
+export async function fetchAllSellerProducts(params?: {
+  status?: number;
+}): Promise<SellerProduct[]> {
+  const result: SellerProduct[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const data = await fetchSellerProducts({
+      page,
+      page_size: 100,
+      status: params?.status,
+    });
+    result.push(...data.list);
+    totalPages = data.pagination.total_pages || 1;
+    page += 1;
+  } while (page <= totalPages);
+
+  return result;
+}
+
 export async function fetchSellerProductById(productId: number): Promise<SellerProduct | null> {
   let page = 1;
   while (page <= 10) {
@@ -52,5 +73,10 @@ export async function updateSellerProductStatus(productId: number, status: 0 | 1
     `/api/v1/seller/products/${productId}/status`,
     { status },
   );
+  unwrap(data);
+}
+
+export async function batchUpdateSellerProductPrices(items: Array<{ id: number; price: number }>): Promise<void> {
+  const { data } = await client.put<ApiEnvelope<{ updated: boolean }>>('/api/v1/seller/products/batch-price', items);
   unwrap(data);
 }

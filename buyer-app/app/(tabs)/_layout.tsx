@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-import { colors } from '@/theme/tokens';
+import { colors, radius } from '@/theme/tokens';
 
 function tabIcon(route: 'home' | 'grid' | 'cart' | 'person', focused: boolean) {
   const active = focused ? colors.primary : colors.textMuted;
@@ -23,15 +23,24 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#7B8597',
         tabBarStyle: {
-          height: 68,
-          paddingTop: 6,
+          height: 72,
+          marginHorizontal: 12,
+          marginBottom: 10,
+          paddingTop: 8,
           paddingBottom: 10,
-          borderTopColor: '#E8EDE8',
+          borderTopWidth: 0,
+          borderRadius: radius.xl,
+          borderColor: colors.border,
           backgroundColor: colors.surface,
+          elevation: 8,
+          shadowColor: '#0B1210',
+          shadowOpacity: 0.08,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 6 },
         },
         tabBarLabelStyle: {
-          fontSize: 13,
-          fontWeight: '500',
+          fontSize: 12,
+          fontWeight: '700',
         },
       }}
     >

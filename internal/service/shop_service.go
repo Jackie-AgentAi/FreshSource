@@ -102,6 +102,26 @@ type SellerShopStatusView struct {
 	BusinessLicense string `json:"business_license"`
 }
 
+type SellerShopDetail struct {
+	ShopID          uint64   `json:"shop_id"`
+	ShopName        string   `json:"shop_name"`
+	Logo            string   `json:"logo"`
+	Description     string   `json:"description"`
+	ContactPhone    string   `json:"contact_phone"`
+	Province        string   `json:"province"`
+	City            string   `json:"city"`
+	District        string   `json:"district"`
+	Address         string   `json:"address"`
+	BusinessLicense string   `json:"business_license"`
+	Latitude        *float64 `json:"latitude"`
+	Longitude       *float64 `json:"longitude"`
+	AuditStatus     int      `json:"audit_status"`
+	AuditRemark     string   `json:"audit_remark"`
+	Status          int      `json:"status"`
+	CreatedAt       string   `json:"created_at"`
+	UpdatedAt       string   `json:"updated_at"`
+}
+
 func (s *ShopService) GetSellerAuditStatus(ctx context.Context, userID int64) (*SellerShopStatusView, error) {
 	shop, err := s.shopRepo.FindOwnedByUserID(ctx, uint64(userID))
 	if err != nil {
@@ -117,6 +137,35 @@ func (s *ShopService) GetSellerAuditStatus(ctx context.Context, userID int64) (*
 		AuditRemark:     shop.AuditRemark,
 		Status:          shop.Status,
 		BusinessLicense: shop.BusinessLicense,
+	}, nil
+}
+
+func (s *ShopService) GetSellerShop(ctx context.Context, userID int64) (*SellerShopDetail, error) {
+	shop, err := s.shopRepo.FindOwnedByUserID(ctx, uint64(userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrShopNotFound
+		}
+		return nil, err
+	}
+	return &SellerShopDetail{
+		ShopID:          shop.ID,
+		ShopName:        shop.ShopName,
+		Logo:            shop.Logo,
+		Description:     shop.Description,
+		ContactPhone:    shop.ContactPhone,
+		Province:        shop.Province,
+		City:            shop.City,
+		District:        shop.District,
+		Address:         shop.Address,
+		BusinessLicense: shop.BusinessLicense,
+		Latitude:        shop.Latitude,
+		Longitude:       shop.Longitude,
+		AuditStatus:     shop.AuditStatus,
+		AuditRemark:     shop.AuditRemark,
+		Status:          shop.Status,
+		CreatedAt:       shop.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       shop.UpdatedAt.Format(time.RFC3339),
 	}, nil
 }
 

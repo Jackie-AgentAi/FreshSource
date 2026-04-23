@@ -48,6 +48,9 @@ func New(
 	sellerProductHandler *sellerhandler.ProductHandler,
 	sellerOrderHandler *sellerhandler.OrderHandler,
 	sellerShopHandler *sellerhandler.ShopHandler,
+	sellerCategoryHandler *sellerhandler.CategoryHandler,
+	sellerDashboardHandler *sellerhandler.DashboardHandler,
+	sellerNotificationHandler *sellerhandler.NotificationHandler,
 ) *gin.Engine {
 	engine := gin.New()
 	engine.Use(gin.Recovery(), middleware.RequestLogger(log), middleware.CORS())
@@ -133,9 +136,16 @@ func New(
 		})
 		if sellerShopHandler != nil {
 			sellerGroup.POST("/shop/apply", sellerShopHandler.ApplyShop)
+			sellerGroup.GET("/shop", sellerShopHandler.GetShop)
 			sellerGroup.GET("/shop/audit-status", sellerShopHandler.GetAuditStatus)
 			sellerGroup.PUT("/shop", sellerShopHandler.UpdateShop)
 			sellerGroup.PUT("/shop/status", sellerShopHandler.UpdateShopStatus)
+		}
+		if sellerDashboardHandler != nil {
+			sellerGroup.GET("/dashboard", sellerDashboardHandler.GetDashboard)
+		}
+		if sellerCategoryHandler != nil {
+			sellerGroup.GET("/categories", sellerCategoryHandler.GetCategories)
 		}
 		if sellerProductHandler != nil {
 			sellerGroup.GET("/products", sellerProductHandler.ListProducts)
@@ -154,6 +164,12 @@ func New(
 			sellerGroup.PUT("/orders/:id/deliver", sellerOrderHandler.DeliverOrder)
 			sellerGroup.PUT("/orders/:id/arrived", sellerOrderHandler.ArrivedOrder)
 			sellerGroup.PUT("/orders/:id/remark", sellerOrderHandler.UpdateRemark)
+		}
+		if sellerNotificationHandler != nil {
+			sellerGroup.GET("/notifications", sellerNotificationHandler.ListNotifications)
+			sellerGroup.GET("/notifications/unread-count", sellerNotificationHandler.GetUnreadCount)
+			sellerGroup.PUT("/notifications/:id/read", sellerNotificationHandler.MarkRead)
+			sellerGroup.PUT("/notifications/read-all", sellerNotificationHandler.MarkAllRead)
 		}
 
 		adminGroup := apiV1.Group("/admin", middleware.AuthRequired(cfg.JWTSecret), middleware.RequireRole(roleAdmin))

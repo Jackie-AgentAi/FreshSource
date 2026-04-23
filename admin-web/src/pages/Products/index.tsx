@@ -212,6 +212,7 @@ export default function ProductsPage() {
   const reviewQueue = useMemo(
     () =>
       [...rows]
+        .filter((item) => item.status === PRODUCT_STATUS.PENDING_REVIEW)
         .map((item) => ({ item, insights: getProductInsights(item) }))
         .sort((a, b) => {
           const score = (entry: { item: ProductItem; insights: ProductAuditInsights }) =>
@@ -227,6 +228,11 @@ export default function ProductsPage() {
   const selectedInsights = useMemo(
     () => (selectedProduct ? getProductInsights(selectedProduct) : null),
     [selectedProduct],
+  );
+
+  const pendingCount = useMemo(
+    () => rows.filter((item) => item.status === PRODUCT_STATUS.PENDING_REVIEW).length,
+    [rows],
   );
 
   const columns: ColumnsType<ProductItem> = [
@@ -320,23 +326,27 @@ export default function ProductsPage() {
           >
             详情
           </Button>
-          <Button
-            size="small"
-            onClick={async () => {
-              await refreshAfterAction(() => approveProduct(row, 1));
-            }}
-          >
-            通过
-          </Button>
-          <Button
-            size="small"
-            danger
-            onClick={async () => {
-              await refreshAfterAction(() => approveProduct(row, 2));
-            }}
-          >
-            驳回
-          </Button>
+          {row.status === PRODUCT_STATUS.PENDING_REVIEW ? (
+            <>
+              <Button
+                size="small"
+                onClick={async () => {
+                  await refreshAfterAction(() => approveProduct(row, 1));
+                }}
+              >
+                通过
+              </Button>
+              <Button
+                size="small"
+                danger
+                onClick={async () => {
+                  await refreshAfterAction(() => approveProduct(row, 2));
+                }}
+              >
+                驳回
+              </Button>
+            </>
+          ) : null}
           <Button
             size="small"
             onClick={async () => {
@@ -377,12 +387,20 @@ export default function ProductsPage() {
     <div className="fm-page">
       <PageHeader
         title="商品管理"
-        description="处理商品审核、上下架与推荐位调整。"
+        description="这里只处理商品审核、上下架与推荐位调整；新增商品需由商家在卖家端提交。"
         extra={
           <Button icon={<ReloadOutlined />} onClick={() => void load(page, pageSize)}>
             刷新
           </Button>
         }
+      />
+
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="管理后台不提供新增商品入口"
+        description={`按需求与接口约束，新增商品走卖家端 /api/v1/seller/products；商家提交后会以“审核中”状态进入这里，当前页待审核商品 ${pendingCount} 个。`}
       />
 
       <Card className="fm-panel" bordered={false}>
@@ -491,7 +509,15 @@ export default function ProductsPage() {
             <InputNumber min={1} placeholder="店铺 ID" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="status">
-            <Select allowClear placeholder="商品状态" options={[{ label: '下架', value: 0 }, { label: '上架', value: 1 }]} />
+            <Select
+              allowClear
+              placeholder="商品状态"
+              options={[
+                { label: '下架', value: PRODUCT_STATUS.OFFLINE },
+                { label: '上架', value: PRODUCT_STATUS.ONLINE },
+                { label: '审核中', value: PRODUCT_STATUS.PENDING_REVIEW },
+              ]}
+            />
           </Form.Item>
           <Form.Item>
             <Space>
@@ -543,7 +569,7 @@ export default function ProductsPage() {
           setReviewSummary('');
         }}
         extra={
-          selectedProduct ? (
+          selectedProduct?.status === PRODUCT_STATUS.PENDING_REVIEW ? (
             <Space>
               <Button
                 onClick={async () => {
@@ -753,33 +779,37 @@ export default function ProductsPage() {
 
             <Card className="fm-panel" bordered={false} title="运营动作">
               <Space wrap>
-                <Button
-                  onClick={async () => {
-                    await refreshAfterAction(async () => {
-                      const ok = await approveProduct(selectedProduct, 1);
-                      if (ok) {
-                        setDetailOpen(false);
-                      }
-                      return ok;
-                    });
-                  }}
-                >
-                  审核通过
-                </Button>
-                <Button
-                  danger
-                  onClick={async () => {
-                    await refreshAfterAction(async () => {
-                      const ok = await approveProduct(selectedProduct, 2);
-                      if (ok) {
-                        setDetailOpen(false);
-                      }
-                      return ok;
-                    });
-                  }}
-                >
-                  驳回商品
-                </Button>
+                {selectedProduct.status === PRODUCT_STATUS.PENDING_REVIEW ? (
+                  <>
+                    <Button
+                      onClick={async () => {
+                        await refreshAfterAction(async () => {
+                          const ok = await approveProduct(selectedProduct, 1);
+                          if (ok) {
+                            setDetailOpen(false);
+                          }
+                          return ok;
+                        });
+                      }}
+                    >
+                      审核通过
+                    </Button>
+                    <Button
+                      danger
+                      onClick={async () => {
+                        await refreshAfterAction(async () => {
+                          const ok = await approveProduct(selectedProduct, 2);
+                          if (ok) {
+                            setDetailOpen(false);
+                          }
+                          return ok;
+                        });
+                      }}
+                    >
+                      驳回商品
+                    </Button>
+                  </>
+                ) : null}
                 <Button
                   onClick={async () => {
                     const resp = await updateProductStatus(

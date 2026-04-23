@@ -8,6 +8,9 @@
     "userInterfaceStyle": "light",
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

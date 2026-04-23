@@ -92,6 +92,25 @@ func (h *ShopHandler) GetAuditStatus(c *gin.Context) {
 	response.Success(c, data)
 }
 
+// GetShop godoc
+// @Summary Seller shop detail
+// @Tags seller-shop
+// @Produce json
+// @Router /seller/shop [get]
+func (h *ShopHandler) GetShop(c *gin.Context) {
+	userID, _, ok := middleware.GetAuthContext(c)
+	if !ok {
+		response.Fail(c, 10002, "token invalid or expired")
+		return
+	}
+	data, err := h.shopService.GetSellerShop(c.Request.Context(), userID)
+	if err != nil {
+		handleShopServiceError(c, err)
+		return
+	}
+	response.Success(c, data)
+}
+
 // UpdateShop godoc
 // @Summary Update seller shop info (re-audit when was approved/rejected)
 // @Tags seller-shop
@@ -149,7 +168,7 @@ func handleShopServiceError(c *gin.Context, err error) {
 	case service.ErrShopAlreadyExists:
 		response.Fail(c, 10001, err.Error())
 	case service.ErrShopNotFound:
-		response.Fail(c, 10001, err.Error())
+		response.Fail(c, 50001, err.Error())
 	case service.ErrShopNameRequired:
 		response.Fail(c, 10001, err.Error())
 	case service.ErrShopInvalidStatus:

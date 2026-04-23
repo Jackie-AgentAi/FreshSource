@@ -14,6 +14,13 @@ type ProductRepository struct {
 	db *gorm.DB
 }
 
+type SellerDashboardProductStats struct {
+	OnSaleCount       int64
+	PendingAuditCount int64
+	WarehouseCount    int64
+	LowStockCount     int64
+}
+
 type BuyerProductQuery struct {
 	CategoryID *uint64
 	ShopID     *uint64
@@ -298,4 +305,54 @@ func (r *ProductRepository) AddStockWithTx(
 		Model(&model.Product{}).
 		Where("id = ? AND shop_id = ? AND deleted_at IS NULL", productID, shopID).
 		Update("stock", gorm.Expr("stock + ?", qty)).Error
+}
+
+func (r *ProductRepository) AggregateSellerDashboardStats(
+	ctx context.Context,
+	shopID uint64,
+) (*SellerDashboardProductStats, error) {
+	type row struct {
+		OnSaleCount       int64 `gorm:"column:on_sale_count"`
+		PendingAuditCount int64 `gorm:"column:pending_audit_count"`
+		WarehouseCount    int64 `gorm:"column:warehouse_count"`
+		LowStockCount     int64 `gorm:"column:low_stock_count"`
+	}
+	var out row
+	err := r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Select(`
+			COALESCE(SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END), 0) AS on_sale_count,
+			COALESCE(SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END), 0) AS pending_audit_count,
+			COALESCE(SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END), 0) AS warehouse_count,
+			COALESCE(SUM(CASE WHEN status = 1 AND stock <= 10 THEN 1 ELSE 0 END), 0) AS low_stock_count
+		`).
+		Where("shop_id = ? AND deleted_at IS NULL", shopID).
+		Scan(&out).Error
+	if err != nil {
+		return nil, err
+	}
+	return &SellerDashboardProductStats{
+		OnSaleCount:       out.OnSaleCount,
+		PendingAuditCount: out.PendingAuditCount,
+		WarehouseCount:    out.WarehouseCount,
+		LowStockCount:     out.LowStockCount,
+	}, nil
+}
+
+func (r *ProductRepository) ListSellerLowStockByShop(
+	ctx context.Context,
+	shopID uint64,
+	stockThreshold int,
+	limit int,
+) ([]model.Product, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	var list []model.Product
+	err := r.db.WithContext(ctx).
+		Where("shop_id = ? AND status = ? AND stock <= ? AND deleted_at IS NULL", shopID, 1, stockThreshold).
+		Order("stock ASC, id DESC").
+		Limit(limit).
+		Find(&list).Error
+	return list, err
 }

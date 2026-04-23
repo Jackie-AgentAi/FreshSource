@@ -171,10 +171,9 @@ export function BuyerOrdersScreen() {
               accessibilityRole="button"
               key={filter.key}
               onPress={() => setActiveFilter(filter.key)}
-              style={styles.tabItem}
+              style={[styles.tabItem, active && styles.tabItemActive]}
             >
               <Text style={[styles.tabText, active && styles.tabTextActive]}>{filter.label}</Text>
-              {active ? <View style={styles.tabIndicator} /> : null}
             </Pressable>
           );
         })}
@@ -262,10 +261,10 @@ export function BuyerOrdersScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    height: 88,
+    height: 72,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8EDE8',
+    borderBottomColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     flexDirection: 'row',
@@ -279,46 +278,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 22,
+    lineHeight: 28,
     color: colors.textStrong,
     fontWeight: '700',
   },
   tabsRow: {
-    minHeight: 88,
+    minHeight: 62,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8EDE8',
+    borderBottomColor: colors.border,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
   tabItem: {
-    minHeight: 88,
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 96,
+  },
+  tabItemActive: {
+    backgroundColor: colors.primarySoft,
   },
   tabText: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 13,
+    lineHeight: 18,
     color: '#6B7280',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   tabTextActive: {
-    color: '#18A84A',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 88,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#18A84A',
+    color: colors.primary,
   },
   content: {
-    padding: spacing.lg,
-    backgroundColor: '#F3F6F3',
+    padding: spacing.md,
+    backgroundColor: colors.background,
     paddingBottom: 120,
   },
 });

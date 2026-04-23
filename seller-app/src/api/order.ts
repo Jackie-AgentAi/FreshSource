@@ -1,6 +1,6 @@
 import { client } from '@/api/client';
 import type { ApiEnvelope } from '@/types/auth';
-import type { SellerOrderDetail, SellerOrderListData } from '@/types/order';
+import type { SellerOrderDetail, SellerOrderListData, SellerOrderListItem } from '@/types/order';
 
 function unwrap<T>(resp: ApiEnvelope<T>): T {
   if (resp.code !== 0 || resp.data === undefined || resp.data === null) {
@@ -16,6 +16,27 @@ export async function fetchSellerOrders(params?: {
 }): Promise<SellerOrderListData> {
   const { data } = await client.get<ApiEnvelope<SellerOrderListData>>('/api/v1/seller/orders', { params });
   return unwrap(data);
+}
+
+export async function fetchAllSellerOrders(params?: {
+  status?: number;
+}): Promise<SellerOrderListItem[]> {
+  const result: SellerOrderListItem[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const data = await fetchSellerOrders({
+      status: params?.status,
+      page,
+      page_size: 100,
+    });
+    result.push(...data.list);
+    totalPages = data.pagination.total_pages || 1;
+    page += 1;
+  } while (page <= totalPages);
+
+  return result;
 }
 
 export async function fetchSellerOrderDetail(orderId: number): Promise<SellerOrderDetail> {

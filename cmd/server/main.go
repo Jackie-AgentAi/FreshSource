@@ -60,6 +60,9 @@ func main() {
 	var sellerProductHandler *sellerhandler.ProductHandler
 	var sellerOrderHandler *sellerhandler.OrderHandler
 	var sellerShopHandler *sellerhandler.ShopHandler
+	var sellerCategoryHandler *sellerhandler.CategoryHandler
+	var sellerDashboardHandler *sellerhandler.DashboardHandler
+	var sellerNotificationHandler *sellerhandler.NotificationHandler
 	smsService := service.NewSMSService(cfg.Env)
 	smsHandler := commonhandler.NewSMSHandler(smsService)
 	uploadService := service.NewUploadService(cfg.UploadDir)
@@ -80,6 +83,7 @@ func main() {
 		categoryService := service.NewCategoryService(categoryRepo)
 		buyerCategoryHandler = buyerhandler.NewCategoryHandler(categoryService)
 		adminCategoryHandler = adminhandler.NewCategoryHandler(categoryService)
+		sellerCategoryHandler = sellerhandler.NewCategoryHandler(categoryService)
 
 		shopRepo := repository.NewShopRepository(dbConn)
 		shopSvc := service.NewShopService(shopRepo)
@@ -111,6 +115,11 @@ func main() {
 		buyerOrderHandler = buyerhandler.NewBuyerOrderHandler(buyerOrderService)
 		sellerOrderService := service.NewSellerOrderService(txManager, orderRepo, productRepo)
 		sellerOrderHandler = sellerhandler.NewOrderHandler(sellerOrderService)
+		notificationRepo := repository.NewNotificationRepository(dbConn)
+		sellerNotificationService := service.NewSellerNotificationService(notificationRepo, orderRepo, productRepo, shopRepo)
+		sellerNotificationHandler = sellerhandler.NewNotificationHandler(sellerNotificationService)
+		sellerDashboardService := service.NewSellerDashboardService(orderRepo, productRepo, shopRepo, sellerNotificationService)
+		sellerDashboardHandler = sellerhandler.NewDashboardHandler(sellerDashboardService)
 		adminOrderService := service.NewAdminOrderService(txManager, orderRepo, shopRepo, productRepo)
 		adminOrderHandler = adminhandler.NewOrderHandler(adminOrderService)
 
@@ -154,6 +163,9 @@ func main() {
 		sellerProductHandler,
 		sellerOrderHandler,
 		sellerShopHandler,
+		sellerCategoryHandler,
+		sellerDashboardHandler,
+		sellerNotificationHandler,
 	)
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Info("server starting",

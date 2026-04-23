@@ -304,6 +304,9 @@ func (s *ProductService) AdminAudit(ctx context.Context, productID uint64, audit
 		}
 		return err
 	}
+	if product.Status != productStatusPending {
+		return ErrProductNotAllowed
+	}
 	nextStatus := productStatusOffShelf
 	if auditStatus == 1 && product.Stock > 0 {
 		nextStatus = productStatusOnShelf

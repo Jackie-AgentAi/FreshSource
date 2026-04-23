@@ -14,6 +14,20 @@ type OrderRepository struct {
 	db *gorm.DB
 }
 
+type SellerRangeSummary struct {
+	Revenue    float64
+	OrderCount int64
+}
+
+type SellerFulfillmentStats struct {
+	TotalOrders      int64
+	PendingOrders    int64
+	DeliveringOrders int64
+	ArrivedOrders    int64
+	CompletedOrders  int64
+	CancelledOrders  int64
+}
+
 func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
@@ -343,4 +357,67 @@ func (r *OrderRepository) CountItemsByOrderIDs(ctx context.Context, orderIDs []u
 		out[row.OrderID] = row.C
 	}
 	return out, nil
+}
+
+func (r *OrderRepository) AggregateSellerRangeSummary(
+	ctx context.Context,
+	sellerID uint64,
+	start time.Time,
+	end time.Time,
+) (*SellerRangeSummary, error) {
+	type row struct {
+		Revenue    float64 `gorm:"column:revenue"`
+		OrderCount int64   `gorm:"column:order_count"`
+	}
+	var out row
+	err := r.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Select("COALESCE(SUM(pay_amount), 0) AS revenue, COUNT(*) AS order_count").
+		Where("seller_id = ? AND deleted_at IS NULL AND created_at >= ? AND created_at < ?", sellerID, start, end).
+		Scan(&out).Error
+	if err != nil {
+		return nil, err
+	}
+	return &SellerRangeSummary{
+		Revenue:    out.Revenue,
+		OrderCount: out.OrderCount,
+	}, nil
+}
+
+func (r *OrderRepository) AggregateSellerFulfillment(
+	ctx context.Context,
+	sellerID uint64,
+) (*SellerFulfillmentStats, error) {
+	type row struct {
+		TotalOrders      int64 `gorm:"column:total_orders"`
+		PendingOrders    int64 `gorm:"column:pending_orders"`
+		DeliveringOrders int64 `gorm:"column:delivering_orders"`
+		ArrivedOrders    int64 `gorm:"column:arrived_orders"`
+		CompletedOrders  int64 `gorm:"column:completed_orders"`
+		CancelledOrders  int64 `gorm:"column:cancelled_orders"`
+	}
+	var out row
+	err := r.db.WithContext(ctx).
+		Model(&model.Order{}).
+		Select(`
+			COUNT(*) AS total_orders,
+			COALESCE(SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END), 0) AS pending_orders,
+			COALESCE(SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END), 0) AS delivering_orders,
+			COALESCE(SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END), 0) AS arrived_orders,
+			COALESCE(SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END), 0) AS completed_orders,
+			COALESCE(SUM(CASE WHEN status = 5 THEN 1 ELSE 0 END), 0) AS cancelled_orders
+		`).
+		Where("seller_id = ? AND deleted_at IS NULL", sellerID).
+		Scan(&out).Error
+	if err != nil {
+		return nil, err
+	}
+	return &SellerFulfillmentStats{
+		TotalOrders:      out.TotalOrders,
+		PendingOrders:    out.PendingOrders,
+		DeliveringOrders: out.DeliveringOrders,
+		ArrivedOrders:    out.ArrivedOrders,
+		CompletedOrders:  out.CompletedOrders,
+		CancelledOrders:  out.CancelledOrders,
+	}, nil
 }

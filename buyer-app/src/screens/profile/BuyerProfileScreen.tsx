@@ -3,34 +3,34 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { fetchBuyerNotificationUnreadCount } from '@/api/notification';
 import { fetchBuyerOrders } from '@/api/buyerOrder';
+import { fetchBuyerNotificationUnreadCount } from '@/api/notification';
 import { PageContainer } from '@/components/PageContainer';
 import { useAuthStore } from '@/store/auth';
-import { colors, elevation, lineHeight, radius, spacing, typography } from '@/theme/tokens';
+import { colors, elevation, radius, spacing } from '@/theme/tokens';
 import { showToast } from '@/utils/toast';
 
 type OrderSummary = {
-  delivered: number;
   completed: number;
+  delivered: number;
   total: number;
 };
 
 type QuickStatusItem = {
-  key: string;
-  label: string;
+  color: string;
   count: number;
   icon: keyof typeof Ionicons.glyphMap;
-  tintColor: string;
+  key: string;
+  label: string;
 };
 
 type MenuItem = {
-  key: string;
-  title: string;
+  badge?: number;
   description?: string;
   icon: keyof typeof Ionicons.glyphMap;
-  badge?: number;
+  key: string;
   onPress: () => void;
+  title: string;
 };
 
 function maskPhone(phone: string): string {
@@ -60,10 +60,8 @@ export function BuyerProfileScreen() {
 
     setUnreadCount(unreadResult.status === 'fulfilled' ? unreadResult.value : 0);
     setOrderSummary({
-      delivered:
-        deliveredResult.status === 'fulfilled' ? deliveredResult.value.pagination.total : 0,
-      completed:
-        completedResult.status === 'fulfilled' ? completedResult.value.pagination.total : 0,
+      delivered: deliveredResult.status === 'fulfilled' ? deliveredResult.value.pagination.total : 0,
+      completed: completedResult.status === 'fulfilled' ? completedResult.value.pagination.total : 0,
       total: totalResult.status === 'fulfilled' ? totalResult.value.pagination.total : 0,
     });
   }, []);
@@ -74,6 +72,9 @@ export function BuyerProfileScreen() {
     }, [loadSummary]),
   );
 
+  const displayName = useMemo(() => (phone ? 'FreshMart 买家' : '未登录用户'), [phone]);
+  const companyName = useMemo(() => (phone ? '生鲜订货账号' : '登录后查看账号信息'), [phone]);
+
   const quickStatusItems = useMemo<QuickStatusItem[]>(
     () => [
       {
@@ -81,27 +82,27 @@ export function BuyerProfileScreen() {
         label: '待收货',
         count: orderSummary.delivered,
         icon: 'cube-outline',
-        tintColor: colors.primaryGlow,
+        color: '#16A34A',
       },
       {
         key: 'review',
         label: '待评价',
         count: orderSummary.completed,
         icon: 'document-text-outline',
-        tintColor: '#F59E0B',
+        color: colors.accent,
       },
       {
         key: 'done',
         label: '已完成',
         count: orderSummary.completed,
-        icon: 'receipt-outline',
-        tintColor: colors.textMuted,
+        icon: 'bag-handle-outline',
+        color: '#6B7280',
       },
     ],
     [orderSummary.completed, orderSummary.delivered],
   );
 
-  const primaryMenus = useMemo<MenuItem[]>(
+  const menuItems = useMemo<MenuItem[]>(
     () => [
       {
         key: 'orders',
@@ -156,79 +157,88 @@ export function BuyerProfileScreen() {
 
   return (
     <PageContainer>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroAvatar}>
-            <Ionicons color={colors.surface} name="person-outline" size={40} />
+            <Ionicons color="#FFFFFF" name="person-outline" size={28} />
           </View>
           <View style={styles.heroBody}>
-            <Text style={styles.heroTitle}>订货买家</Text>
+            <Text style={styles.heroTitle}>{displayName}</Text>
             <Text style={styles.heroPhone}>{maskPhone(phone)}</Text>
-            <Text style={styles.heroDesc}>鲜源采购常用功能入口</Text>
+            <Text style={styles.heroCompany}>{companyName}</Text>
           </View>
-          <Ionicons color={colors.surface} name="chevron-forward" size={28} />
+          <Pressable accessibilityRole="button" onPress={() => router.push('/notifications')} style={styles.heroMessagePill}>
+            <Ionicons color="#FFFFFF" name="notifications-outline" size={14} />
+            <Text style={styles.heroMessageText}>{unreadCount > 0 ? `${unreadCount} 未读` : '消息'}</Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/search')}
-          style={styles.quickOrderCard}
-        >
-          <View style={styles.quickOrderBody}>
-            <Text style={styles.quickOrderTitle}>快速下单</Text>
-            <Text style={styles.quickOrderDesc}>一键采购常用商品</Text>
+        <View style={styles.heroMetrics}>
+          <View style={styles.heroMetricItem}>
+            <Text style={styles.heroMetricValue}>{orderSummary.total}</Text>
+            <Text style={styles.heroMetricLabel}>累计订单</Text>
           </View>
-          <View style={styles.quickOrderIcon}>
-            <Ionicons color={colors.surface} name="bag-handle-outline" size={28} />
+          <View style={styles.heroMetricLine} />
+          <View style={styles.heroMetricItem}>
+            <Text style={styles.heroMetricValue}>{orderSummary.delivered}</Text>
+            <Text style={styles.heroMetricLabel}>待收货</Text>
           </View>
-        </Pressable>
+          <View style={styles.heroMetricLine} />
+          <View style={styles.heroMetricItem}>
+            <Text style={styles.heroMetricValue}>{orderSummary.completed}</Text>
+            <Text style={styles.heroMetricLabel}>已完成</Text>
+          </View>
+        </View>
 
-        <View style={styles.statusCard}>
-          {quickStatusItems.map((item) => (
-            <Pressable
-              accessibilityRole="button"
-              key={item.key}
-              onPress={() =>
-                router.push({
-                  pathname: '/orders',
-                  params: {
-                    filter:
-                      item.key === 'delivered'
-                        ? 'delivered'
-                        : item.key === 'review'
-                          ? 'completed'
-                          : 'all',
-                  },
-                })
-              }
-              style={styles.statusItem}
-            >
-              <View style={styles.statusIconWrap}>
-                <Ionicons color={item.tintColor} name={item.icon} size={24} />
-                {item.count > 0 ? (
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusBadgeText}>{item.count > 99 ? '99+' : item.count}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={styles.statusLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.sectionCard}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/(tabs)/categories')}
+            style={styles.quickOrderCard}
+          >
+            <View>
+              <Text style={styles.quickOrderTitle}>快速下单</Text>
+              <Text style={styles.quickOrderDesc}>一键采购常用商品</Text>
+            </View>
+            <View style={styles.quickOrderIcon}>
+              <Ionicons color="#FFFFFF" name="bag-handle-outline" size={20} />
+            </View>
+          </Pressable>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.quickActionRow}>
+            {quickStatusItems.map((item) => (
+              <Pressable
+                accessibilityRole="button"
+                key={item.key}
+                onPress={() => router.push('/orders')}
+                style={styles.quickActionItem}
+              >
+                <View style={styles.quickActionIconWrap}>
+                  <Ionicons color={item.color} name={item.icon} size={24} />
+                  {item.count > 0 ? (
+                    <View style={styles.quickActionBadge}>
+                      <Text style={styles.quickActionBadgeText}>{item.count > 99 ? '99+' : item.count}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.quickActionLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.menuSection}>
-          {primaryMenus.map((item, index) => (
+          {menuItems.map((item, index) => (
             <Pressable
               accessibilityRole="button"
               key={item.key}
               onPress={item.onPress}
-              style={[styles.menuRow, index === primaryMenus.length - 1 && styles.menuRowLast]}
+              style={[styles.menuRow, index === menuItems.length - 1 && styles.menuRowLast]}
             >
               <View style={styles.menuIconWrap}>
-                <Ionicons color={colors.primaryGlow} name={item.icon} size={24} />
+                <Ionicons color="#16A34A" name={item.icon} size={20} />
               </View>
               <View style={styles.menuBody}>
                 <View style={styles.menuTitleRow}>
@@ -241,7 +251,7 @@ export function BuyerProfileScreen() {
                 </View>
                 {item.description ? <Text style={styles.menuDesc}>{item.description}</Text> : null}
               </View>
-              <Ionicons color={colors.textMuted} name="chevron-forward" size={24} />
+              <Ionicons color="#9CA3AF" name="chevron-forward" size={18} />
             </Pressable>
           ))}
         </View>
@@ -255,21 +265,24 @@ export function BuyerProfileScreen() {
               style={[styles.simpleRow, index === secondaryMenus.length - 1 && styles.menuRowLast]}
             >
               <Text style={styles.simpleTitle}>{item.title}</Text>
-              <Ionicons color={colors.textMuted} name="chevron-forward" size={24} />
+              <Ionicons color="#9CA3AF" name="chevron-forward" size={16} />
             </Pressable>
           ))}
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={async () => {
-            await clearAuth();
-            router.replace('/(auth)/login');
-          }}
-          style={styles.logoutButton}
-        >
-          <Text style={styles.logoutText}>退出登录</Text>
-        </Pressable>
+        <View style={styles.logoutWrap}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={async () => {
+              await clearAuth();
+              router.replace('/(auth)/login');
+            }}
+            style={styles.logoutButton}
+          >
+            <Ionicons color="#DC2626" name="log-out-outline" size={18} />
+            <Text style={styles.logoutText}>退出登录</Text>
+          </Pressable>
+        </View>
 
         <Text style={styles.versionText}>版本 v2.1.0</Text>
       </ScrollView>
@@ -281,19 +294,24 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xxxl,
     backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
   },
   hero: {
-    backgroundColor: '#18A84A',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
+    ...elevation.md,
   },
   heroAvatar: {
-    width: 66,
-    height: 66,
-    borderRadius: radius.round,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -302,113 +320,162 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroTitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    color: colors.surface,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600',
   },
   heroPhone: {
-    marginTop: spacing.sm,
-    fontSize: typography.h4,
-    lineHeight: lineHeight.h4,
-    color: colors.surface,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
   },
-  heroDesc: {
-    marginTop: spacing.xxs,
-    fontSize: typography.body,
-    lineHeight: lineHeight.body,
-    color: 'rgba(255,255,255,0.8)',
+  heroCompany: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
   },
-  quickOrderCard: {
-    marginTop: spacing.lg,
-    marginHorizontal: spacing.lg,
+  heroMessagePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  heroMessageText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
+  },
+  heroMetrics: {
+    marginTop: spacing.md,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: '#B8E4C5',
-    backgroundColor: '#FFF8EA',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...elevation.sm,
+  },
+  heroMetricItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroMetricValue: {
+    color: colors.primary,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+  },
+  heroMetricLabel: {
+    marginTop: spacing.xs,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  heroMetricLine: {
+    width: 1,
+    height: 34,
+    backgroundColor: colors.divider,
+  },
+  sectionCard: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  quickOrderCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(22,163,74,0.2)',
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...elevation.sm,
-  },
-  quickOrderBody: {
-    flex: 1,
   },
   quickOrderTitle: {
-    fontSize: 24,
-    lineHeight: 32,
-    color: colors.textStrong,
-    fontWeight: '800',
-  },
-  quickOrderDesc: {
-    marginTop: spacing.sm,
-    fontSize: typography.h4,
-    lineHeight: lineHeight.h4,
-    color: '#7A8396',
-  },
-  quickOrderIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.round,
-    backgroundColor: '#18A84A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.lg,
-  },
-  statusCard: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  statusItem: {
-    alignItems: 'center',
-    width: '30%',
-  },
-  statusIconWrap: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusBadge: {
-    position: 'absolute',
-    right: -2,
-    top: -6,
-    minWidth: 22,
-    height: 22,
-    borderRadius: radius.round,
-    paddingHorizontal: spacing.xs,
-    backgroundColor: '#EF4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusBadgeText: {
-    color: colors.surface,
-    fontSize: typography.small,
-    lineHeight: lineHeight.small,
-    fontWeight: '700',
-  },
-  statusLabel: {
-    marginTop: spacing.md,
-    fontSize: 18,
+    color: '#1A1A1A',
+    fontSize: 16,
     lineHeight: 24,
-    color: colors.textStrong,
     fontWeight: '600',
   },
+  quickOrderDesc: {
+    color: '#6B7280',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  quickOrderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickActionItem: {
+    width: '30%',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  quickActionIconWrap: {
+    position: 'relative',
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '600',
+  },
+  quickActionLabel: {
+    color: '#1A1A1A',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+  },
   menuSection: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
   menuRow: {
-    minHeight: 92,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    minHeight: 72,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -418,16 +485,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   menuIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.round,
-    backgroundColor: colors.surfaceDisabled,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   menuBody: {
     flex: 1,
+    minWidth: 0,
   },
   menuTitleRow: {
     flexDirection: 'row',
@@ -435,35 +503,35 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   menuTitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    color: colors.textStrong,
-    fontWeight: '700',
+    color: '#1A1A1A',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   menuDesc: {
-    marginTop: spacing.xxs,
-    fontSize: typography.h4,
-    lineHeight: lineHeight.h4,
-    color: '#7A8396',
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
   },
   menuBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: radius.round,
-    backgroundColor: '#EF4444',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
   },
   menuBadgeText: {
-    color: colors.surface,
-    fontSize: typography.body,
-    lineHeight: lineHeight.body,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '600',
   },
   simpleRow: {
-    minHeight: 72,
-    paddingHorizontal: spacing.lg,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -471,33 +539,37 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   simpleTitle: {
-    fontSize: 20,
-    lineHeight: 28,
-    color: colors.textStrong,
-    fontWeight: '500',
+    color: '#1A1A1A',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  logoutWrap: {
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   logoutButton: {
-    height: 56,
-    marginTop: spacing.xxl,
-    marginHorizontal: spacing.lg,
-    borderRadius: radius.xl,
-    borderWidth: 2,
-    borderColor: '#EF4444',
-    backgroundColor: colors.surface,
+    height: 48,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
+    ...elevation.sm,
   },
   logoutText: {
-    color: '#EF4444',
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '700',
+    color: '#DC2626',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   versionText: {
-    marginTop: spacing.xxl,
+    marginTop: spacing.xl,
     textAlign: 'center',
-    fontSize: typography.h4,
-    lineHeight: lineHeight.h4,
-    color: '#7A8396',
+    color: '#6B7280',
+    fontSize: 12,
+    lineHeight: 18,
   },
 });
