@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "experiments": {
       "typedRoutes": true
     },
@@ -15,7 +16,11 @@
       }
     },
     "android": {
-      "package": "com.jackie888.freshmartseller"
+      "package": "com.jackie888.freshmartseller",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8A028"
+      }
     }
   }
 }
