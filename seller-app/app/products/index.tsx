@@ -1,8 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -12,7 +16,7 @@ import {
   View,
 } from 'react-native';
 
-import { fetchSellerProducts, updateSellerProductStatus } from '@/api/product';
+import { fetchSellerProducts, fetchSellerProductsExportCsv, importSellerProductsCsv, updateSellerProductStatus } from '@/api/product';
 import { SellerProductCard } from '@/components/SellerProductCard';
 import { sellerProductStatusLabel } from '@/constants/product';
 import { sellerColors, sellerRadius } from '@/theme/seller';
@@ -35,6 +39,7 @@ export default function ProductListPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(
     async (targetPage: number, append: boolean) => {
@@ -97,6 +102,64 @@ export default function ProductListPage() {
       setLoadingMore(false);
     }
   }, [loading, loadingMore, page, totalPages, load]);
+
+  const onExportCsv = useCallback(async () => {
+    if (bulkBusy) {
+      return;
+    }
+    try {
+      setBulkBusy(true);
+      const csv = await fetchSellerProductsExportCsv(status);
+      const outfile = new File(Paths.cache, `products_export_${Date.now()}.csv`);
+      if (!outfile.exists) {
+        outfile.create({ intermediates: true });
+      }
+      outfile.write(csv, { encoding: 'utf8' });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(outfile.uri, { mimeType: 'text/csv', dialogTitle: '导出商品 CSV' });
+      } else {
+        Alert.alert('已导出', `文件已写入：${outfile.uri}`);
+      }
+    } catch (e) {
+      Alert.alert('导出失败', e instanceof Error ? e.message : '未知错误');
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [bulkBusy, status]);
+
+  const onImportCsv = useCallback(async () => {
+    if (bulkBusy) {
+      return;
+    }
+    try {
+      const pick = await DocumentPicker.getDocumentAsync({
+        type: ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel'],
+        copyToCacheDirectory: true,
+      });
+      if (pick.canceled || !pick.assets?.length) {
+        return;
+      }
+      setBulkBusy(true);
+      const uri = pick.assets[0].uri;
+      const infile = new File(uri);
+      const csv = await infile.text();
+      const result = await importSellerProductsCsv(csv);
+      const failed = result.errors?.length ?? 0;
+      const preview =
+        failed > 0
+          ? `\n失败 ${failed} 条（示例）：\n${result.errors
+              .slice(0, 5)
+              .map((x) => `第 ${x.line} 行：${x.message}`)
+              .join('\n')}`
+          : '';
+      Alert.alert('导入完成', `新增 ${result.created} 条，更新 ${result.updated} 条。${preview}`);
+      await initialLoad();
+    } catch (e) {
+      Alert.alert('导入失败', e instanceof Error ? e.message : '未知错误');
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [bulkBusy, initialLoad]);
 
   const switchStatus = useCallback(
     async (item: SellerProduct) => {
@@ -163,6 +226,26 @@ export default function ProductListPage() {
           );
         })}
       </View>
+
+      <View style={styles.bulkRow}>
+        <Pressable
+          style={({ pressed }) => [styles.bulkBtn, pressed ? styles.bulkBtnPressed : null, bulkBusy ? styles.bulkBtnDisabled : null]}
+          onPress={() => void onExportCsv()}
+          disabled={bulkBusy}
+        >
+          <Ionicons name="download-outline" size={18} color={sellerColors.primary} />
+          <Text style={styles.bulkBtnText}>导出 CSV</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.bulkBtn, pressed ? styles.bulkBtnPressed : null, bulkBusy ? styles.bulkBtnDisabled : null]}
+          onPress={() => void onImportCsv()}
+          disabled={bulkBusy}
+        >
+          <Ionicons name="cloud-upload-outline" size={18} color={sellerColors.primary} />
+          <Text style={styles.bulkBtnText}>导入 CSV</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.bulkHint}>与当前「在售/仓库/审核中」筛选一致导出；导入表头需与导出模板一致，多图 URL 用 | 分隔。</Text>
 
       {loading && items.length === 0 ? (
         <View style={styles.center}>
@@ -306,6 +389,42 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: sellerColors.primary,
     fontWeight: '700',
+  },
+  bulkRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+  },
+  bulkBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: sellerRadius.lg,
+    borderWidth: 1,
+    borderColor: '#8DE2C2',
+    backgroundColor: sellerColors.card,
+  },
+  bulkBtnPressed: {
+    opacity: 0.92,
+  },
+  bulkBtnDisabled: {
+    opacity: 0.55,
+  },
+  bulkBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: sellerColors.primary,
+  },
+  bulkHint: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    fontSize: 11,
+    lineHeight: 16,
+    color: sellerColors.muted,
   },
   listContent: {
     padding: 16,

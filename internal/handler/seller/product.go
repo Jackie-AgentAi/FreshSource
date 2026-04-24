@@ -3,6 +3,7 @@ package seller
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -85,6 +86,67 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		List:       list,
 		Pagination: response.BuildPagination(page, pageSize, int(total)),
 	})
+}
+
+// ExportProductsCSV godoc
+// @Summary Seller product export (CSV)
+// @Tags seller-product
+// @Produce text/csv
+// @Param status query int false "status filter, same as list"
+// @Router /seller/products/export [get]
+func (h *ProductHandler) ExportProductsCSV(c *gin.Context) {
+	userID, _, ok := middleware.GetAuthContext(c)
+	if !ok {
+		response.Fail(c, 10002, "token invalid or expired")
+		return
+	}
+	status, hasStatus := parseOptionalInt(c.Query("status"))
+	var statusPtr *int
+	if hasStatus {
+		statusPtr = &status
+	}
+	body, filename, err := h.productService.ExportSellerProductsCSV(c.Request.Context(), userID, statusPtr)
+	if err != nil {
+		handleProductServiceError(c, err)
+		return
+	}
+	c.Header("Content-Disposition", `attachment; filename="`+filename+`"`)
+	c.Data(http.StatusOK, "text/csv; charset=utf-8", body)
+}
+
+type importProductsCSVBody struct {
+	CSV string `json:"csv"`
+}
+
+// ImportProductsCSV godoc
+// @Summary Seller product import (CSV)
+// @Tags seller-product
+// @Accept json
+// @Produce json
+// @Param request body importProductsCSVBody true "UTF-8 CSV text"
+// @Router /seller/products/import [post]
+func (h *ProductHandler) ImportProductsCSV(c *gin.Context) {
+	userID, _, ok := middleware.GetAuthContext(c)
+	if !ok {
+		response.Fail(c, 10002, "token invalid or expired")
+		return
+	}
+	var body importProductsCSVBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.Fail(c, 10001, "invalid request params")
+		return
+	}
+	csvText := strings.TrimSpace(body.CSV)
+	if csvText == "" {
+		response.Fail(c, 10001, service.ErrProductImportEmpty.Error())
+		return
+	}
+	result, err := h.productService.ImportSellerProductsFromCSV(c.Request.Context(), userID, csvText)
+	if err != nil {
+		handleProductServiceError(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 // CreateProduct godoc
@@ -303,7 +365,8 @@ func handleProductServiceError(c *gin.Context, err error) {
 	switch err {
 	case service.ErrProductCoverRequired,
 		service.ErrProductImagesTooMany,
-		service.ErrProductNameRequired:
+		service.ErrProductNameRequired,
+		service.ErrProductImageRefInvalid:
 		response.Fail(c, 10001, err.Error())
 	case service.ErrProductNotFound,
 		service.ErrProductNotAllowed:
@@ -313,6 +376,11 @@ func handleProductServiceError(c *gin.Context, err error) {
 	case service.ErrSellerShopNotFound:
 		response.Fail(c, 50001, err.Error())
 	case service.ErrBatchPriceEmpty:
+		response.Fail(c, 10001, err.Error())
+	case service.ErrProductImportEmpty,
+		service.ErrProductImportTooLarge,
+		service.ErrProductImportTooManyRows,
+		service.ErrProductImportBadHeader:
 		response.Fail(c, 10001, err.Error())
 	default:
 		c.JSON(http.StatusOK, response.Envelope{

@@ -8,6 +8,14 @@
     "userInterfaceStyle": "light",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "289f64e9-b9cd-4946-9806-41a503b5d704"
+      }
+    },
+    "android": {
+      "package": "com.jackie888.freshmartseller"
     }
   }
 }

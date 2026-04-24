@@ -1,6 +1,14 @@
 import { client } from '@/api/client';
+import { API_BASE_URL } from '@/constants/api';
+import { useAuthStore } from '@/store/auth';
 import type { ApiEnvelope } from '@/types/api';
 import type { SaveSellerProductPayload, SellerProduct, SellerProductListData } from '@/types/product';
+
+export type SellerProductImportResult = {
+  created: number;
+  updated: number;
+  errors: Array<{ line: number; message: string }>;
+};
 
 function unwrap<T>(resp: ApiEnvelope<T>): T {
   if (resp.code !== 0 || resp.data === undefined || resp.data === null) {
@@ -79,4 +87,30 @@ export async function updateSellerProductStatus(productId: number, status: 0 | 1
 export async function batchUpdateSellerProductPrices(items: Array<{ id: number; price: number }>): Promise<void> {
   const { data } = await client.put<ApiEnvelope<{ updated: boolean }>>('/api/v1/seller/products/batch-price', items);
   unwrap(data);
+}
+
+/** 拉取当前筛选条件下的商品导出 CSV 文本（非 JSON 信封）。 */
+export async function fetchSellerProductsExportCsv(status?: number): Promise<string> {
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const q = status !== undefined ? `?status=${encodeURIComponent(String(status))}` : '';
+  const token = useAuthStore.getState().accessToken;
+  const res = await fetch(`${base}/api/v1/seller/products/export${q}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    const j = (await res.json()) as { code?: number; message?: string };
+    throw new Error(j.message || '导出失败');
+  }
+  if (!res.ok) {
+    throw new Error(`导出失败 (${res.status})`);
+  }
+  return await res.text();
+}
+
+export async function importSellerProductsCsv(csv: string): Promise<SellerProductImportResult> {
+  const { data } = await client.post<ApiEnvelope<SellerProductImportResult>>('/api/v1/seller/products/import', {
+    csv,
+  });
+  return unwrap(data);
 }

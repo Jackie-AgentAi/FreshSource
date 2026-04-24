@@ -29,6 +29,11 @@ var (
 	ErrBatchPriceEmpty         = errors.New("batch price payload is empty")
 	ErrProductInvalidAudit     = errors.New("invalid product audit_status")
 	ErrProductInvalidRecommend = errors.New("invalid is_recommend")
+	ErrProductImageRefInvalid  = errors.New("invalid image url: use http(s) or a path starting with / (e.g. /uploads/...)")
+	ErrProductImportEmpty       = errors.New("import csv is empty")
+	ErrProductImportTooLarge    = errors.New("import csv exceeds max size")
+	ErrProductImportTooManyRows = errors.New("import exceeds max 500 data rows")
+	ErrProductImportBadHeader   = errors.New("import csv header does not match template")
 )
 
 type ProductService struct {
@@ -681,10 +686,40 @@ func validateProductInput(input SaveProductInput) error {
 	if strings.TrimSpace(input.CoverImage) == "" {
 		return ErrProductCoverRequired
 	}
+	if err := validateProductImageRef(input.CoverImage); err != nil {
+		return err
+	}
 	if len(input.Images) > 9 {
 		return ErrProductImagesTooMany
 	}
+	for _, img := range input.Images {
+		if strings.TrimSpace(img) == "" {
+			return ErrProductImageRefInvalid
+		}
+		if err := validateProductImageRef(img); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// validateProductImageRef 允许：本地上传返回的以 / 开头的路径（如 /uploads/xxx），或公网 http(s)（含 OSS/CDN 外链）。
+func validateProductImageRef(raw string) error {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ErrProductImageRefInvalid
+	}
+	if len(s) > 500 {
+		return ErrProductImageRefInvalid
+	}
+	ls := strings.ToLower(s)
+	if strings.HasPrefix(ls, "https://") || strings.HasPrefix(ls, "http://") {
+		return nil
+	}
+	if strings.HasPrefix(s, "/") && !strings.HasPrefix(s, "//") {
+		return nil
+	}
+	return ErrProductImageRefInvalid
 }
 
 func marshalImages(images []string) (string, error) {

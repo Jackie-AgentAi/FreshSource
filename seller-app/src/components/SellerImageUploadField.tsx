@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { sellerColors, sellerRadius } from '@/theme/seller';
+import { resolveMediaUrl } from '@/utils/media';
 
 export function SellerImageUploadField({
   label,
@@ -28,7 +29,7 @@ export function SellerImageUploadField({
         </Pressable>
       </View>
       {value ? (
-        <Image source={{ uri: value }} style={styles.preview} />
+        <Image source={{ uri: resolveMediaUrl(value) ?? value }} style={styles.preview} />
       ) : (
         <View style={styles.placeholder}>
           <Ionicons name="image-outline" size={26} color={sellerColors.muted} />

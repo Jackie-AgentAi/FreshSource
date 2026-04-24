@@ -149,6 +149,8 @@ func New(
 		}
 		if sellerProductHandler != nil {
 			sellerGroup.GET("/products", sellerProductHandler.ListProducts)
+			sellerGroup.GET("/products/export", sellerProductHandler.ExportProductsCSV)
+			sellerGroup.POST("/products/import", sellerProductHandler.ImportProductsCSV)
 			sellerGroup.POST("/products", sellerProductHandler.CreateProduct)
 			sellerGroup.PUT("/products/:id", sellerProductHandler.UpdateProduct)
 			sellerGroup.PUT("/products/:id/status", sellerProductHandler.UpdateProductStatus)

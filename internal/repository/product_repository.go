@@ -150,6 +150,30 @@ func (r *ProductRepository) ListByShop(
 	return products, total, nil
 }
 
+// ListByShopForExport 导出用：不分页，按 id 倒序，最多 limit 条。
+func (r *ProductRepository) ListByShopForExport(
+	ctx context.Context,
+	shopID uint64,
+	status *int,
+	limit int,
+) ([]model.Product, error) {
+	if limit <= 0 || limit > 5000 {
+		limit = 5000
+	}
+	query := r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Where("shop_id = ? AND deleted_at IS NULL", shopID)
+	if status != nil {
+		query = query.Where("status = ?", *status)
+	}
+	var products []model.Product
+	err := query.Order("id DESC").Limit(limit).Find(&products).Error
+	if err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 func (r *ProductRepository) ListForBuyer(
 	ctx context.Context,
 	queryInput BuyerProductQuery,

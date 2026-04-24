@@ -12,6 +12,7 @@ import { sellerColors, sellerRadius } from '@/theme/seller';
 import type { SellerCategoryOption, SellerCategoryTreeNode } from '@/types/category';
 import type { SaveSellerProductPayload, SellerProduct } from '@/types/product';
 import { confirmChanges } from '@/utils/confirmChanges';
+import { resolveMediaUrl } from '@/utils/media';
 
 type ProductFormValues = {
   category_id: string;
@@ -305,7 +306,7 @@ export function ProductForm({
         title={SECTION_LABEL.media}
         expanded={expanded.media}
         onToggle={() => toggleSection('media')}
-        description="支持从相册上传图片，也可以手动粘贴 URL。"
+        description="支持相册上传到本地服务器（/uploads/…），也可粘贴公网图片地址（含 OSS/CDN 的 https 链接）。"
       >
         <SellerImageUploadField
           label="封面图"
@@ -319,7 +320,7 @@ export function ProductForm({
           control={control}
           name="cover_image"
           label="封面图 URL"
-          placeholder="支持手动粘贴图片地址"
+          placeholder="本地上传路径或 https 外链（OSS 等）"
           error={errors.cover_image?.message}
           rules={{ required: '请上传或填写封面图地址' }}
         />
@@ -336,7 +337,7 @@ export function ProductForm({
             <View style={styles.galleryGrid}>
               {galleryImages.map((url) => (
                 <View key={url} style={styles.galleryItem}>
-                  <Image source={{ uri: url }} style={styles.galleryImage} />
+                  <Image source={{ uri: resolveMediaUrl(url) ?? url }} style={styles.galleryImage} />
                   <Pressable style={styles.galleryRemove} onPress={() => removeGalleryImage(url)}>
                     <Ionicons name="close" size={14} color="#FFFFFF" />
                   </Pressable>

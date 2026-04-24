@@ -213,6 +213,8 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/products` | Query: `status` |
+| GET | `/products/export` | Query: `status?`（与列表一致，可选）；返回 UTF-8 CSV（含 BOM），`Content-Type: text/csv` |
+| POST | `/products/import` | Body: `{ "csv": "<UTF-8 CSV 全文>" }`；表头与导出模板一致；`id` 为空或 `0` 为新建，否则更新本店商品；单行失败不影响其它行；`data`：`{ created, updated, errors: [{ line, message }] }`；单文件最多约 4MiB、500 条数据行 |
 | POST | `/products` | 发布 → 审核中 |
 | PUT | `/products/:id` | 编辑 |
 | PUT | `/products/:id/status` | 上下架 |
